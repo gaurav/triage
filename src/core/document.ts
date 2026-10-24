@@ -7,21 +7,18 @@ export function buildDocument(raws: Raw[], ids: string[], mapping: ResolvedMappi
   if (mapping.sort) {
     const { field, desc } = mapping.sort;
     const byId = new Map(items.map((it) => [it.id, it]));
-    order = [...order].sort((a, b) => {
-      const va = byId.get(a)!.raw[field];
-      const vb = byId.get(b)!.raw[field];
-      const c = compare(va, vb);
-      return desc ? -c : c;
-    });
+    order = [...order].sort((a, b) => compare(byId.get(a)!.raw[field], byId.get(b)!.raw[field], !!desc));
   }
   return { chaff: 1, mapping, items, order, decisions: {} };
 }
 
-/** Empty values sort last in either direction; numbers numerically; else as strings. */
-export function compare(a: unknown, b: unknown): number {
+/** Empty values sort last whichever direction is asked for; numbers numerically; else as
+ *  strings. `desc` is applied here rather than by negating the result, which would put the
+ *  blanks first. */
+export function compare(a: unknown, b: unknown, desc = false): number {
   const ea = isEmpty(a);
   const eb = isEmpty(b);
   if (ea || eb) return Number(ea) - Number(eb);
-  if (typeof a === 'number' && typeof b === 'number') return a - b;
-  return asString(a).localeCompare(asString(b), undefined, { numeric: true, sensitivity: 'base' });
+  const c = typeof a === 'number' && typeof b === 'number' ? a - b : asString(a).localeCompare(asString(b), undefined, { numeric: true, sensitivity: 'base' });
+  return desc ? -c : c;
 }

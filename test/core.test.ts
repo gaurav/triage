@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { applyOp } from '../src/core/decisions.ts';
-import { buildDocument } from '../src/core/document.ts';
+import { buildDocument, compare } from '../src/core/document.ts';
 import { ABSENT, NONE, PRESENT, facetCounts, facetValues, matchesFilter } from '../src/core/facets.ts';
 import { inferMapping, resolveMapping } from '../src/core/infer.ts';
 import { effectiveBucket, type Raw } from '../src/core/model.ts';
@@ -139,5 +139,21 @@ describe('decisions', () => {
     assert.deepEqual(doc.decisions['1'], { bucket: 'now', note: 'hi' });
     applyOp(doc, { op: 'order', order: ['5', '4', 'nope'] });
     assert.deepEqual(doc.order, ['5', '4', '1', '2', '3'], 'unknown ids dropped, forgotten ids keep their order at the end');
+  });
+});
+
+describe('compare', () => {
+  it('sorts blanks last in both directions and numbers numerically', () => {
+    const vals = ['b', '', 'a', null, 'c'];
+    assert.deepEqual([...vals].sort((x, y) => compare(x, y)), ['a', 'b', 'c', '', null]);
+    assert.deepEqual([...vals].sort((x, y) => compare(x, y, true)), ['c', 'b', 'a', '', null]);
+    assert.deepEqual([10, 9, '', 100].sort((x, y) => compare(x, y)), [9, 10, 100, '']);
+    assert.deepEqual(['x10', 'x9'].sort((x, y) => compare(x, y)), ['x9', 'x10'], 'numeric-aware strings');
+  });
+
+  it('applies --sort with desc keeping blanks last', () => {
+    const raws = [{ id: 1, t: 'a', due: '' }, { id: 2, t: 'b', due: '2026-01-02' }, { id: 3, t: 'c', due: '2026-01-01' }];
+    const m = resolveMapping(inferMapping(raws), { chaff: 1, sort: { field: 'due', desc: true } });
+    assert.deepEqual(buildDocument(raws, ['1', '2', '3'], m).order, ['2', '3', '1']);
   });
 });
