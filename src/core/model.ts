@@ -135,12 +135,15 @@ export function toItems(raws: Raw[], ids: string[], m: ResolvedMapping): Item[] 
       raw,
     };
     if (m.body && !isEmpty(raw[m.body])) item.body = asString(raw[m.body]);
-    if (m.priority && !isEmpty(raw[m.priority])) item.priority = asString(raw[m.priority]);
+    if (m.priority && !isEmpty(raw[m.priority]) && !NO_PRIORITY.test(asString(raw[m.priority]))) item.priority = asString(raw[m.priority]);
     if (m.url && typeof raw[m.url] === 'string' && raw[m.url]) item.url = raw[m.url] as string;
     if (m.parent && !isEmpty(raw[m.parent])) item.parent = asString(raw[m.parent]);
     return item;
   });
 }
+
+/** Priority values that mean "none"; they would otherwise badge every row. */
+const NO_PRIORITY = /^\s*(no(ne|t set|rmal)?|no priority|default|unset|-|p?[0-9]?\s*none)\s*$/i;
 
 function toStringArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x) => !isEmpty(x)).map(asString);

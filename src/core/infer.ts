@@ -45,6 +45,8 @@ export interface FieldProfile {
   /** Fraction of non-empty string values that parse as ISO dates. */
   dateness: number;
   htmlish: boolean;
+  /** Share of non-empty values taken by the most common one (1 = every value the same). */
+  topShare: number;
   avgLength: number;
   sampleValues: string[];
 }
@@ -93,6 +95,7 @@ export function profileFields(raws: Raw[]): FieldProfile[] {
       scalarArray: a.kinds.has('array') && a.scalarArray && !a.kinds.has('string') && !a.kinds.has('number') && !a.kinds.has('boolean') && !a.kinds.has('object'),
       dateness: a.strings ? a.dates / a.strings : 0,
       htmlish: a.strings > 0 && a.html / a.strings > 0.5,
+      topShare: a.filled ? Math.max(0, ...a.values.values()) / a.filled : 0,
       avgLength: a.strings ? a.len / a.strings : 0,
       sampleValues: [...a.values.entries()].sort((x, y) => y[1] - x[1]).slice(0, 5).map(([v]) => v),
     };
@@ -185,11 +188,12 @@ export function inferMapping(raws: Raw[], opts: { dictKeys?: boolean } = {}): Re
     if (f) m.dates[slot] = f;
   }
 
-  // priority: a priority-looking name with a handful of distinct values, preferring the one that
-  // actually varies (Sunsama's backlogPriority is "No priority" on every row).
+  // priority: a priority-looking name with a handful of distinct values, scored by how many
+  // records carry a value that is not the dominant one (Sunsama's backlogPriority is filled on
+  // every row but reads "No priority" on all but one; latestDailyPriority is the useful one).
   const prio = profiles
     .filter((p) => PRIORITY_NAME.test(p.field) && p.distinct >= 2 && p.distinct <= 10 && !p.kinds.has('object'))
-    .sort((a, b) => b.filled - a.filled);
+    .sort((a, b) => b.filled * (1 - b.topShare) - a.filled * (1 - a.topShare));
   if (prio[0]) m.priority = prio[0].field;
 
   // facets: low-cardinality scalar (or scalar-array) fields, plus present/absent for dates and urls.
