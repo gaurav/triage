@@ -43,7 +43,8 @@ const uiBuilds = views.map((name) => ({
   jsx: 'automatic',
   jsxImportSource: 'preact',
   define,
-  sourcemap: true,
+  // A map is handy while developing; the package does not need 466 KB of it.
+  sourcemap: watch ? 'inline' : false,
   minify: !watch,
   plugins: [noNodeBuiltins],
   logLevel: 'info',
