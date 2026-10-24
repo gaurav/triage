@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { ABSENT, NONE, PRESENT } from '../../src/core/facets.ts';
 import type { FacetSpec, Item } from '../../src/core/model.ts';
 import { Detail } from '../shared/Detail.tsx';
-import { formatDate, plural } from '../shared/format.ts';
+import { formatDate, miniChips, plural, rowChipSpecs } from '../shared/format.ts';
 import { installKeys, KEY_HELP } from '../shared/keys.ts';
 import * as S from '../shared/state.ts';
 
@@ -91,6 +91,7 @@ function Header({ onDone }: { onDone: () => void }) {
           <span>{triaged}/{total}</span>
         </span>
       )}
+      <SortControl />
       <span class={`save ${save}`} title={S.saveError.value ?? m?.out}>
         {save === 'saved' ? 'saved' : save === 'saving' ? 'saving…' : `not saved: ${S.saveError.value}`}
       </span>
@@ -98,6 +99,31 @@ function Header({ onDone }: { onDone: () => void }) {
       <button class="ghost" onClick={() => (S.helpOpen.value = !S.helpOpen.value)} title="?">?</button>
       <button class="primary" onClick={onDone} title="D">Done</button>
     </header>
+  );
+}
+
+/** Sorting changes the order that is written, not just the view, so a caller gets what was seen. */
+function SortControl() {
+  const d = S.doc.value!;
+  const m = d.mapping;
+  const options: [string, string][] = [['', 'input order'], [m.title, `title (${m.title})`]];
+  for (const [slot, field] of Object.entries(m.dates)) options.push([field, `${slot} (${field})`]);
+  if (m.priority) options.push([m.priority, `priority (${m.priority})`]);
+  for (const f of m.facets) if (f.mode === 'values' && !options.some(([v]) => v === f.field)) options.push([f.field, f.field]);
+  const sort = S.sort.value;
+  return (
+    <span class="sort" title="sort; changes the order written to the output">
+      <select value={sort?.field ?? ''} onChange={(e) => S.setSort((e.target as HTMLSelectElement).value || null)}>
+        {options.map(([v, label]) => (
+          <option key={v} value={v}>{label}</option>
+        ))}
+      </select>
+      {sort && (
+        <button class="ghost small" onClick={() => S.setSort(sort.field, !sort.desc)} title="flip direction">
+          {sort.desc ? '↓' : '↑'}
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -253,7 +279,7 @@ function Row({ row, style }: { row: Extract<S.Row, { kind: 'item' }>; style: Rec
   const isCursor = S.cursor.value === row.key;
   const isSelected = S.selected.value.has(item.id);
   const due = item.dates.due ? formatDate(item.dates.due) : null;
-  const chips = d.mapping.facets.filter((f) => f.mode === 'values' && f.field !== d.mapping.priority).slice(0, 3);
+  const chips = rowChipSpecs(d.mapping);
   return (
     <div
       class={`row ${isCursor ? 'cursor' : ''} ${isSelected ? 'selected' : ''} ${row.member ? 'member' : ''} ${bucket !== undefined ? 'triaged' : ''}`}
@@ -276,23 +302,6 @@ function Row({ row, style }: { row: Extract<S.Row, { kind: 'item' }>; style: Rec
       {bucket !== undefined && <span class={`badge b-${slug(bucket)}`}>{bucket}</span>}
     </div>
   );
-}
-
-/** Up to three short facet values for a row, without repeating one (channel and context are
- *  often the same tag in a Sunsama export). */
-function miniChips(item: Item, specs: FacetSpec[]): [string, string][] {
-  const out: [string, string][] = [];
-  const seen = new Set<string>();
-  for (const f of specs) {
-    const v = item.raw[f.field];
-    if (v === undefined || v === null || v === '' || v === false || (Array.isArray(v) && !v.length)) continue;
-    const raw = Array.isArray(v) ? v.join(', ') : String(v);
-    const text = /^[\d.]+$/.test(raw) || v === true ? `${f.field} ${raw}` : raw;
-    if (seen.has(text)) continue;
-    seen.add(text);
-    out.push([f.field, text]);
-  }
-  return out;
 }
 
 function slug(s: string): string {

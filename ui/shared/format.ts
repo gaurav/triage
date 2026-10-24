@@ -1,5 +1,5 @@
 // Small presentation helpers shared by views.
-import { asString, isRecord, isScalar } from '../../src/core/model.ts';
+import { asString, isRecord, isScalar, type FacetSpec, type Item, type ResolvedMapping } from '../../src/core/model.ts';
 
 const HTML_TAG = /<\/?[a-z][^>]*>/i;
 
@@ -55,4 +55,28 @@ export function formatMinutes(v: unknown): string {
   if (Number.isNaN(n)) return asString(v);
   if (n >= 60 && n % 30 === 0) return `${n / 60} hr`;
   return `${n} min`;
+}
+
+/** The facets a list row shows as chips: the mapping's `chips`, else the first three value
+ *  facets other than the priority field (which has a badge of its own). */
+export function rowChipSpecs(m: ResolvedMapping): FacetSpec[] {
+  if (m.chips) return m.chips.map((f) => m.facets.find((s) => s.field === f) ?? { field: f, mode: 'values' as const });
+  return m.facets.filter((f) => f.mode === 'values' && f.field !== m.priority).slice(0, 3);
+}
+
+/** Chip texts for a row, as [field, text]: blanks and `false` are skipped, a bare number or
+ *  `true` is prefixed with its field name, and a value already shown is not repeated. */
+export function miniChips(item: Item, specs: FacetSpec[]): [string, string][] {
+  const out: [string, string][] = [];
+  const seen = new Set<string>();
+  for (const f of specs) {
+    const v = item.raw[f.field];
+    if (v === undefined || v === null || v === '' || v === false || (Array.isArray(v) && !v.length)) continue;
+    const raw = Array.isArray(v) ? v.map(asString).join(', ') : asString(v);
+    const text = /^[\d.]+$/.test(raw) || v === true ? `${f.field} ${raw}` : raw;
+    if (seen.has(text)) continue;
+    seen.add(text);
+    out.push([f.field, text]);
+  }
+  return out;
 }

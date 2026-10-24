@@ -43,6 +43,10 @@ export interface Mapping {
   children?: string;
   /** Fields shown prominently in the detail pane, in this order. Others follow, collapsed. */
   detail?: string[];
+  /** Facet fields shown as small chips on a list row (default: the first three value facets
+   *  other than the priority field). A Sunsama export's channel and context usually agree, so
+   *  a sidecar can say `"chips": ["channel"]`. */
+  chips?: string[];
   facets?: (string | FacetSpec)[];
   /** Field whose normalised value stacks duplicates; `false` disables stacking. */
   stack?: string | false;

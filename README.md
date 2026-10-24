@@ -112,9 +112,15 @@ failure. `chaff inspect file.json` tells you what chaff will make of a file befo
 - **Stacks**: items whose normalised title matches collapse into one row with a count. A digit
   puts the whole stack in a bucket; `x` expands it so members can go separately.
 - **Keys**: `j`/`k` move, `1`–`9` assign, `0` clears, `space` selects several, `J`/`K` move a row,
-  `n` note, `z` undo, `/` search, `h` hides what is already triaged, `Enter` opens the item's
-  link, `D` finishes, `?` lists them all.
+  `n` note, `z` undo, `/` search, `h` hides what is already triaged, `g` groups by the next facet,
+  `Enter` opens the item's link, `D` finishes, `?` lists them all.
 - Shift-click a row to select it; clicking "group" twice turns grouping off.
+- **Sort**, in the header, by title, any date, priority or a facet. Sorting changes the order
+  that is written, not just the view, so what you saw is what the caller gets; "input order"
+  puts it back.
+- Each row shows up to three facet values as small chips. When two facets carry the same value
+  (a Sunsama export's channel and context usually do) it is shown once; to choose the facets
+  yourself, put `"chips": ["channel", "integration"]` in the sidecar.
 
 ## Trying other UIs
 

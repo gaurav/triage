@@ -23,6 +23,8 @@ export const order = signal<string[]>([]);
 export const filter = signal<FacetFilter>({});
 export const query = signal('');
 export const groupBy = signal<string | null>(null);
+/** The sort in force, shown in the header; null means the input (or manually arranged) order. */
+export const sort = signal<{ field: string; desc: boolean } | null>(null);
 export const hideTriaged = signal(false);
 export const cursor = signal<string | null>(null);
 export const selected = signal<ReadonlySet<string>>(new Set());
@@ -51,6 +53,7 @@ export async function load(): Promise<void> {
       summary.value = r.summary;
       decisions.value = r.doc.decisions;
       order.value = r.doc.order;
+      if (r.doc.mapping.sort) sort.value = { field: r.doc.mapping.sort.field, desc: !!r.doc.mapping.sort.desc };
     });
   } catch (e) {
     loadError.value = (e as Error).message;
@@ -297,6 +300,7 @@ export function setNote(id: string, note: string): void {
 export function moveCursorRow(delta: 1 | -1): void {
   const r = cursorRow.value;
   if (!r || r.member) return;
+  sort.value = null;
   const list = rows.value.filter((x): x is Extract<Row, { kind: 'item' }> => x.kind === 'item' && !x.member);
   const i = list.findIndex((x) => x.key === r.key);
   const j = i + delta;
@@ -311,14 +315,27 @@ export function moveCursorRow(delta: 1 | -1): void {
   apply([{ op: 'order', order: o }]);
 }
 
-/** Re-sort the whole order by a raw field (view and output alike). */
-export function sortBy(field: string, desc: boolean): void {
+/** Re-sort the whole order by a raw field (view and output alike); null restores input order. */
+export function setSort(field: string | null, desc = false): void {
   const byId = itemsById.value;
-  const o = [...order.value].sort((a, b) => {
-    const c = compare(byId.get(a)!.raw[field], byId.get(b)!.raw[field]);
-    return desc ? -c : c;
-  });
+  if (field === null) {
+    sort.value = null;
+    apply([{ op: 'order', order: doc.value!.items.map((it) => it.id) }]);
+    cursor.value = null;
+    return;
+  }
+  sort.value = { field, desc };
+  const o = [...order.value].sort((a, b) => compare(byId.get(a)!.raw[field], byId.get(b)!.raw[field], desc));
   apply([{ op: 'order', order: o }]);
+  // Start from the top of the new order rather than following the old cursor row down the list.
+  cursor.value = null;
+}
+
+/** g: no grouping, then each facet in sidebar order, then none again. */
+export function cycleGroupBy(): void {
+  const specs = facetSpecs.value;
+  const i = specs.findIndex((s) => s.field === groupBy.value);
+  groupBy.value = i + 1 < specs.length ? specs[i + 1]!.field : null;
 }
 
 export function moveCursor(delta: number): void {

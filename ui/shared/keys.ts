@@ -19,6 +19,7 @@ export const KEY_HELP: KeyHelp[] = [
   { keys: 'z', does: 'undo' },
   { keys: '/', does: 'search' },
   { keys: 'h', does: 'hide / show triaged items' },
+  { keys: 'g', does: 'group the list by the next facet (and eventually by none)' },
   { keys: 'Enter', does: 'open the item’s link' },
   { keys: 'D', does: 'Done: write the file and quit' },
   { keys: '?', does: 'this help' },
@@ -62,6 +63,7 @@ export function installKeys(hooks: KeyHooks): () => void {
     else if (k === '/') hooks.focusSearch();
     else if (k === 'n') hooks.focusNote();
     else if (k === 'h') S.hideTriaged.value = !S.hideTriaged.value;
+    else if (k === 'g') S.cycleGroupBy();
     else if (k === '?') S.helpOpen.value = !S.helpOpen.value;
     else if (k === 'D') hooks.requestDone();
     else if (k === 'Enter') {

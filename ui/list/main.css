@@ -42,6 +42,7 @@ header .counts .sel { color: var(--warn); }
 header .progress { display: flex; align-items: center; gap: 6px; margin-left: auto; color: var(--muted); }
 header .bar { width: 140px; height: 7px; background: var(--chip); border-radius: 4px; overflow: hidden; display: inline-block; }
 header .bar span { display: block; height: 100%; background: var(--ok); }
+header .sort select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 2px 4px; max-width: 170px; }
 header .save { color: var(--muted); font-size: 12px; }
 header .save.saving { color: var(--warn); }
 header .save.error { color: var(--late); }
