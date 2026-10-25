@@ -44,7 +44,7 @@ restarted (`claude --resume`). Sunsama's help pages do not list the tools; the o
 
 | Tool | Notes |
 | --- | --- |
-| `get_archived_tasks(offset)` | Pages of 15–20. **Paging is unreliable**: windows overlap, and some archived tasks never appear at any offset, even once the ones it does return have been moved out (on 2026-10-25 it reported `totalTasks: 63` with every page empty). `totalTasks` itself is accurate. Sweep offsets a few apart, union by `_id`, check anything you expect but did not see with `get_task_by_id`, and treat the remainder as reachable only from the app's Archive panel (Shift+A). `search_tasks` does not surface archived tasks. |
+| `get_archived_tasks(offset)` | Pages of 15–20. **Paging is unreliable**: windows overlap and some archived tasks never appear at any offset, so sweep offsets a few apart, union by `_id`, and check anything you expect but did not see with `get_task_by_id`. **`totalTasks` overcounts**: it reported 205 for an Archive that held 142, and 63 once the app's Archive panel was empty, so it evidently counts deleted records too. The app's Archive panel (Shift+A) is the ground truth for "is it empty". `search_tasks` does not surface archived tasks. |
 | `get_backlog_tasks(page, queryId)` | Backlog pages; later pages need the `queryId` from page 0. |
 | `get_task_by_id(taskId)` | One task with `integrationDetails`; the reliable way to confirm `isArchived`. |
 | `search_tasks(searchTerm?)` | 20 most recently modified tasks, no paging; useful to see what moved today. |
