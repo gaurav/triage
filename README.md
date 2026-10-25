@@ -92,6 +92,8 @@ chaff issues.json --title title --facet labels,milestone \
 
 Do not modify the input file while chaff runs, and treat exit 2 as "partial, resumable", not as
 failure. `chaff inspect file.json` tells you what chaff will make of a file before you serve it.
+[docs/sunsama.md](docs/sunsama.md) is a worked example: triaging a Sunsama Archive through its
+MCP server into skip, delete or a day, with a committed sidecar.
 
 ## Using it
 

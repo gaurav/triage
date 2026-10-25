@@ -44,7 +44,9 @@ to try different triage UIs on the same data and the same contract; the README h
 - The Note component is keyed by item id. Resetting its text in an effect lost the first
   keystroke typed before the effect ran.
 - Real Sunsama exports are personal and live in the gitignored `data/`. The committed fixture is
-  synthetic: `node test/fixtures/make-sunsama-like.mjs` regenerates it.
+  synthetic: `node test/fixtures/make-sunsama-like.mjs` regenerates it. `docs/sunsama.md` has
+  the export's quirks, the MCP tools and the archive-triage recipe; `docs/sunsama/` holds the
+  sidecar and the script that turns MCP records into chaff input.
 
 ## Checking a UI change
 

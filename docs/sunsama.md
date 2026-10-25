@@ -1,0 +1,76 @@
+# Working with Sunsama tasks
+
+chaff was built against a Sunsama export, and the first real job it did was triaging a Sunsama
+Archive through Sunsama's MCP server. This page is what that took: the shape of the data, the
+tools, and the recipe, so the next pass does not rediscover it.
+
+## The export
+
+Sunsama's export is one JSON array; a real one lives in the gitignored `data/sunsama/`, and
+`test/fixtures/sunsama-like.json` is a synthetic stand-in (`node test/fixtures/make-sunsama-like.mjs`
+regenerates it). Things that are not obvious from the field names:
+
+- `id` is the task's Mongo id, the same `_id` the MCP server uses, so the two join directly.
+- `startDate` is the day the task currently sits on. It moves every time a task rolls over, so
+  for a stale task it is the last day it rolled to, not when it was planned.
+- `startDate` and `completedDate` both blank means Backlog or Archive; the export does not say
+  which. The MCP server does (`isBacklogged`, `isArchived`).
+- `timeEstimate` is minutes. `channel` and `context` carry the same value.
+- `backlogPriority` is filled on every row with the same value, which is why inference ignores it.
+- Standing recurrences (the templates behind "every Monday") are not in the export. A filtered
+  export may also lack the integration URLs; the MCP record has them under `integrationDetails`.
+
+## Archive and Backlog
+
+The Backlog is the "someday" list: no day, a time bucket (next two weeks … never), optional
+folders. The Archive is where a task goes after rolling over unfinished for N consecutive days
+(a setting on the archive panel). A task leaves the Archive by being put on a day or into the
+Backlog. Recurrences get archived too, and because Sunsama creates a fresh template when one is
+edited, the Archive accumulates near-duplicate recurrences ("Catch up on incoming" × 9). Those
+stack in chaff on their title.
+
+## The MCP server
+
+Sunsama's server is `https://api.sunsama.com/mcp` (HTTP, OAuth). For this repo:
+
+```sh
+claude mcp add --transport http Sunsama https://api.sunsama.com/mcp   # local scope
+```
+
+then `/mcp` to sign in. Tools added to a running session do not appear until the session is
+restarted (`claude --resume`). Sunsama's help pages do not list the tools; the ones that matter:
+
+| Tool | Notes |
+| --- | --- |
+| `get_archived_tasks(offset)` | Pages of 15–20. **Paging is unreliable**: windows overlap and some tasks never appear at any offset, and `totalTasks` counts more than the list returns. Sweep offsets a few apart, union by `_id`, and check anything you expect but did not see with `get_task_by_id`. |
+| `get_backlog_tasks(page, queryId)` | Backlog pages; later pages need the `queryId` from page 0. |
+| `get_task_by_id(taskId)` | One task with `integrationDetails`; the reliable way to confirm `isArchived`. |
+| `search_tasks(searchTerm?)` | 20 most recently modified tasks, no paging; useful to see what moved today. |
+| `unarchive_task(taskId, calendarDay)` | The write this recipe uses: out of the Archive and onto a day. |
+| `move_task_to_day`, `move_task_to_backlog` | For tasks that are not archived. |
+| `delete_task(taskId)` / `restore_task(taskId)` | Soft delete and its undo. |
+
+Read-only tools are safe to call freely. Treat everything else as one-at-a-time until a read-back
+confirms it did what you meant.
+
+## The recipe
+
+1. **Collect.** Call `get_archived_tasks` at offsets a few apart until the union stops growing,
+   then `get_task_by_id` for candidates from the export (incomplete, recently rolled over) that
+   never appeared. Save each response as a JSON file.
+2. **Build the list.** `docs/sunsama/build-archive.py out.json page*.json --export export.json`
+   dedupes by `_id`, merges the export's notes and subtasks, and asks `gh` whether each linked
+   GitHub issue or PR is open, closed or merged (`githubState`). It judges nothing; the states are
+   facets.
+3. **Triage.** `chaff out.json --map docs/sunsama/archive.chaff-map.json --out decisions.json`.
+   The sidecar sets the buckets to `skip`, `delete` or a day (`d`), a `comment` note, facets for
+   category, channel, service, `githubState` and `recurring`, and chips. Delete is for the rare
+   case, typically a task whose issue is already closed; a task that is probably done still gets
+   a day so it is verified before it is closed.
+4. **Apply.** Read `decisions.json`. For each day, `unarchive_task` one task, read it back, then
+   the rest. Show the delete list by title and wait for an explicit yes before `delete_task`;
+   `restore_task` is the undo. Record each id, action and result in a file next to the decisions.
+
+What is not automated: the MCP responses land in the agent's context, not on disk, so step 1 is
+the agent writing them to files. A script that spoke to the server directly would need the OAuth
+token Claude Code holds, which is not exposed.
