@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "Sunsama": {
+      "type": "http",
+      "url": "https://api.sunsama.com/mcp"
+    }
+  }
+}
