@@ -7,7 +7,7 @@
   "priority": "priority",
   "url": "url",
   "children": "subtasks",
-  "facets": ["category", "channel", "service", "githubState", "recurring", "priority", "folder"],
+  "facets": ["category", "channel", "service", "githubState", "recurring", { "field": "timeSpent", "mode": "present" }, "priority", "folder"],
   "chips": ["channel", "githubState", "service"],
   "detail": ["githubTitle", "timeEstimate", "timeSpent", "ageDays", "recurrence", "inExport"],
   "sort": { "field": "createdAt" },

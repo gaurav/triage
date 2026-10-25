@@ -73,7 +73,9 @@ confirms it did what you meant.
 4. **Apply.** Read `decisions.json`. For each day, `unarchive_task` one task, read it back, then
    the rest; `move_task_to_backlog` for `backlog` and `mark_task_as_completed` for `complete`,
    the same way. Show the delete list by title and wait for an explicit yes before
-   `delete_task`; `restore_task` is the undo. Record each id, action and result in a file next
+   `delete_task`; `restore_task` is the undo. **A task with elapsed time (`actualTimeSpent`) is
+   never deleted**: time was spent on it, so it is either marked complete or moved to today to be
+   reviewed first, whichever Gaurav chooses when the list is shown. Record each id, action and result in a file next
    to the decisions.
 
 What is not automated: the MCP responses land in the agent's context, not on disk, so step 1 is
