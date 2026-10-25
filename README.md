@@ -47,6 +47,7 @@ file keeps its shape (array, object, NDJSON).
 | Flag | Writes |
 | --- | --- |
 | `--assign F=a,b,c` | `F` gets the bucket. The values get keys 1, 2, 3… Values already in `F` in the input count as buckets too. For a value with a comma, add `--bucket "Needed soon, really"`. |
+| `--assign F=a,b,@date` | As above, and `d` puts an item on a day instead: `F` gets `2026-10-27`. Type the day, or `mon`, `next fri`, `+3`, `today`; Enter alone repeats the last day. A day and a named value are the same field, so an item has one or the other. |
 | `--note F` | `F` gets a free-text note, written when you press `n`. |
 | `--order F` | `F` gets the item's position in the final order, from 0. |
 
@@ -111,8 +112,8 @@ failure. `chaff inspect file.json` tells you what chaff will make of a file befo
   present/absent facet, which is how "done vs open" is filtered in a task export.
 - **Stacks**: items whose normalised title matches collapse into one row with a count. A digit
   puts the whole stack in a bucket; `x` expands it so members can go separately.
-- **Keys**: `j`/`k` move, `1`–`9` assign, `0` clears, `space` selects several, `J`/`K` move a row,
-  `n` note, `z` undo, `/` search, `h` hides what is already triaged, `g` groups by the next facet,
+- **Keys**: `j`/`k` move, `1`–`9` assign, `d` puts the item on a day, `0` clears, `space` selects
+  several, `J`/`K` move a row, `n` note, `z` undo, `/` search, `h` hides what is already triaged, `g` groups by the next facet,
   `Enter` opens the item's link, `D` finishes, `?` lists them all.
 - Shift-click a row to select it; clicking "group" twice turns grouping off.
 - **Sort**, in the header, by title, any date, priority or a facet. Sorting changes the order

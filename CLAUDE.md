@@ -23,6 +23,12 @@ to try different triage UIs on the same data and the same contract; the README h
 
 - Clearing a bucket means deleting the decision, which restores the input's own value. There is
   no way to blank a value the input had; that is deliberate, so output minus input is decisions.
+- A day chosen with `d` is an ordinary bucket value (`--assign F=skip,delete,@date` sets
+  `buckets.date`), not a decision kind of its own. That is what makes "skip, delete, or a day"
+  exclusive, and it is why write, resume, undo and the summary needed no new paths. The only
+  special cases are the UI's day input and `buildMapping` not listing days found in the input as
+  keyed values. Days are local calendar days; `toDay` in `ui/shared/dates.ts`, never
+  `toISOString().slice(0, 10)`, which is a day late east of UTC.
 - Output order is the input order until the user reorders or sorts (`orderedIds`). After that,
   stacked duplicates follow the first of their stack. Regrouping stacks in an untouched session
   made diffs noisy for no decision, so don't.
