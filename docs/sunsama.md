@@ -36,7 +36,9 @@ mark them `isStandingRecurrence: true` and carry the `recurrenceRule`.
 Sunsama's server is `https://api.sunsama.com/mcp` (HTTP, OAuth). For this repo:
 
 ```sh
-claude mcp add --transport http Sunsama https://api.sunsama.com/mcp   # local scope
+cp .mcp.json.default .mcp.json      # project scope; .mcp.json is gitignored
+# or, for this checkout only:
+claude mcp add --transport http Sunsama https://api.sunsama.com/mcp
 ```
 
 then `/mcp` to sign in. Tools added to a running session do not appear until the session is
@@ -64,6 +66,7 @@ confirms it did what you meant.
    then `get_task_by_id` for candidates from the export (incomplete, recently rolled over) that
    never appeared. Save each response as a JSON file.
 2. **Build the list.** `docs/sunsama/build-archive.py out.json page*.json --export export.json`
+   (`test/sunsama.test.ts` runs it on a synthetic page and reads the result with the sidecar)
    dedupes by `_id`, merges the export's notes and subtasks, and asks `gh` whether each linked
    GitHub issue or PR is open, closed or merged (`githubState`). It judges nothing; the states are
    facets.
@@ -75,7 +78,8 @@ confirms it did what you meant.
    and `complete` is for one that is known to be done.
 4. **Apply.** Read `decisions.json`. For each day, `unarchive_task` one task, read it back, then
    the rest; `move_task_to_backlog` for `backlog` and `mark_task_as_completed` for `complete`,
-   the same way. Show the delete list by title and wait for an explicit yes before
+   the same way (those two paths are written from the tool descriptions; the first pass used
+   neither, so verify the read-back the first time). Show the delete list by title and wait for an explicit yes before
    `delete_task`; `restore_task` is the undo. **A task with elapsed time (`actualTimeSpent`) is
    never deleted**: time was spent on it, so it is either marked complete or moved to today to be
    reviewed first, whichever Gaurav chooses when the list is shown. **Deleting an archived
