@@ -25,9 +25,11 @@ regenerates it). Things that are not obvious from the field names:
 The Backlog is the "someday" list: no day, a time bucket (next two weeks … never), optional
 folders. The Archive is where a task goes after rolling over unfinished for N consecutive days
 (a setting on the archive panel). A task leaves the Archive by being put on a day or into the
-Backlog. Recurrences get archived too, and because Sunsama creates a fresh template when one is
-edited, the Archive accumulates near-duplicate recurrences ("Catch up on incoming" × 9). Those
-stack in chaff on their title.
+Backlog. Recurrences get archived too: every occurrence of a recurring task is its own task
+record, and an occurrence that was edited (time logged, notes, subtasks) is kept on rollover
+instead of being replaced by the next one, so the Archive accumulates stale occurrences of the
+same series ("Catch up on incoming" × 9). Those stack in chaff on their title. The MCP records
+mark them `isStandingRecurrence: true` and carry the `recurrenceRule`.
 
 ## The MCP server
 
@@ -50,7 +52,8 @@ restarted (`claude --resume`). Sunsama's help pages do not list the tools; the o
 | `move_task_to_backlog(taskId)` | Out of the Archive into the Backlog (`unarchive_task` says it does this without a day, but its schema requires one). |
 | `mark_task_as_completed(taskId)` | For a task that turns out to be done; `mark_task_as_incomplete` undoes it. |
 | `move_task_to_day` | For tasks that are not archived. |
-| `delete_task(taskId)` / `restore_task(taskId)` | Soft delete and its undo. |
+| `delete_task(taskId)` / `restore_task(taskId)` | Soft delete of one task record and its undo. |
+| `delete_incomplete_recurring_tasks` | **Never for archive triage.** It terminates the whole series, irreversibly. |
 
 Read-only tools are safe to call freely. Treat everything else as one-at-a-time until a read-back
 confirms it did what you meant.
@@ -75,7 +78,12 @@ confirms it did what you meant.
    the same way. Show the delete list by title and wait for an explicit yes before
    `delete_task`; `restore_task` is the undo. **A task with elapsed time (`actualTimeSpent`) is
    never deleted**: time was spent on it, so it is either marked complete or moved to today to be
-   reviewed first, whichever Gaurav chooses when the list is shown. Record each id, action and result in a file next
+   reviewed first, whichever Gaurav chooses when the list is shown. **Deleting an archived
+   occurrence of a recurring task must not touch the series**: `delete_task` acts on one record,
+   which is what is wanted, and `delete_incomplete_recurring_tasks` is never the answer. Before
+   the first such delete, read the next occurrence day (`sunsama://tasks/{day}`) and confirm an
+   occurrence of the series is there; delete one archived record; read that day again and
+   confirm the occurrence survived; only then do the rest. Record each id, action and result in a file next
    to the decisions.
 
 What is not automated: the MCP responses land in the agent's context, not on disk, so step 1 is
