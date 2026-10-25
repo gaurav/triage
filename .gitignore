@@ -1,0 +1,6 @@
+# /data/ is a scratch directory
+/data/
+node_modules/
+dist/
+*.triaged.json
+*.triaged.ndjson

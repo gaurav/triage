@@ -1,0 +1,5 @@
+{
+  "alpha": {"name": "Alpha task", "state": "open"},
+  "beta": {"name": "Beta task", "state": "closed"},
+  "10": {"name": "Numeric key", "state": "open"}
+}

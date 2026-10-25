@@ -1,0 +1,7 @@
+[
+  {"id": 1, "title": "Fix the login bug", "body": "<p>Users <b>cannot</b> log in</p>", "labels": ["bug", "auth"], "due": "2026-11-01", "priority": "high", "url": "https://example.com/1"},
+  {"id": 2, "title": "Fix the login bug.", "body": "duplicate report", "labels": ["bug"], "due": "", "priority": "low", "url": ""},
+  {"id": 3, "title": "Write docs", "body": "", "labels": [], "due": null, "priority": "low", "bucket": "someday"},
+  {"id": 4, "title": "", "body": "untitled thing", "labels": ["chore"], "priority": "high"},
+  {"id": 5, "title": "  write DOCS ", "body": "", "labels": ["docs"], "done": true}
+]

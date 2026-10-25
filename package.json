@@ -1,0 +1,52 @@
+{
+  "name": "chaff",
+  "version": "0.1.0",
+  "description": "Triage any JSON or NDJSON list in your browser: stack duplicates, facet, sort items into buckets, and get the decisions back as a file. Built so that different triage UIs can be tried on the same data.",
+  "license": "GPL-3.0",
+  "author": "Gaurav Vaidya",
+  "repository": "github:gaurav/triage",
+  "homepage": "https://github.com/gaurav/triage#readme",
+  "bugs": "https://github.com/gaurav/triage/issues",
+  "keywords": [
+    "triage",
+    "json",
+    "ndjson",
+    "ui",
+    "cli",
+    "sort",
+    "buckets",
+    "facets",
+    "duplicates"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "bin": {
+    "chaff": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "prepack": "npm run build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@preact/signals": "^2.11.3",
+    "@types/node": "^26.6.5",
+    "dompurify": "^3.4.17",
+    "esbuild": "^0.28.2",
+    "preact": "^11.0.2",
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

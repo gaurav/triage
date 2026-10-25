@@ -1,0 +1,8 @@
+{
+  "chaff": 1,
+  "mapping": {"chaff": 1, "id": "key", "title": "summary", "facets": ["kind"], "buckets": {"field": "decision", "values": ["keep", "drop"]}},
+  "items": [
+    {"key": "k1", "summary": "First", "kind": "issue"},
+    {"key": "k2", "summary": "Second", "kind": "pr", "decision": "keep"}
+  ]
+}
