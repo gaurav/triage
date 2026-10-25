@@ -24,7 +24,7 @@ button.ghost:hover { background: var(--hover); }
 button.ghost.on { color: var(--accent); }
 button.small { padding: 1px 6px; font-size: 12px; }
 button.tiny { padding: 0 5px; font-size: 11px; color: var(--muted); }
-input[type=search], textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 4px 7px; width: 100%; }
+input[type=search], input[type=text], textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 4px 7px; width: 100%; }
 kbd { font: 11px ui-monospace, Menlo, monospace; background: var(--chip); color: var(--chip-fg); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; min-width: 16px; display: inline-block; text-align: center; }
 code, pre { font: 12px ui-monospace, Menlo, monospace; }
 pre { white-space: pre-wrap; word-break: break-word; background: var(--panel); padding: 6px; border-radius: 5px; max-height: 50vh; overflow: auto; }
@@ -81,7 +81,8 @@ nav.facets label { display: flex; align-items: center; gap: 4px; cursor: pointer
 .row .due { font-size: 11px; color: var(--muted); }
 .row .due.late { color: var(--late); }
 .badge { font-size: 11px; padding: 0 6px; border-radius: 9px; background: var(--accent); color: var(--accent-fg); }
-.badge.b-chaff, .badge.b-drop, .badge.b-delete { background: var(--muted); }
+.badge.b-chaff, .badge.b-drop, .badge.b-delete, .badge.b-skip { background: var(--muted); }
+.badge.b-day { background: var(--select); color: var(--fg); border: 1px solid var(--line); }
 
 .detail { grid-area: detail; overflow: auto; border-left: 1px solid var(--line); padding: 12px 14px; overflow-wrap: anywhere; }
 .detail.empty { color: var(--muted); }
@@ -104,6 +105,8 @@ ul.children { margin: 0; padding-left: 18px; }
 details { margin-top: 10px; }
 summary { cursor: pointer; color: var(--muted); }
 .note textarea { resize: vertical; }
+.day input.bad { border-color: var(--late); }
+.chip.bucket .rel { opacity: .8; }
 
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; }
 .dialog { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; max-width: 520px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }

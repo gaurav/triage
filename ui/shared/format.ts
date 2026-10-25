@@ -1,5 +1,6 @@
 // Small presentation helpers shared by views.
 import { asString, isRecord, isScalar, type FacetSpec, type Item, type ResolvedMapping } from '../../src/core/model.ts';
+import { toDay } from './dates.ts';
 
 const HTML_TAG = /<\/?[a-z][^>]*>/i;
 
@@ -16,8 +17,11 @@ export function parseDate(s: string): Date | null {
 export function formatDate(s: string, now = new Date()): { abs: string; rel: string } {
   const d = parseDate(s);
   if (!d) return { abs: s, rel: '' };
-  const abs = d.toISOString().slice(0, 10);
-  const days = Math.round((d.getTime() - now.getTime()) / 86400000);
+  const abs = toDay(d);
+  // Whole calendar days apart, so a bare day is "tomorrow" all day long and not "in 2 days"
+  // before lunch.
+  const dayStart = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((dayStart(d) - dayStart(now)) / 86400000);
   const ad = Math.abs(days);
   let span: string;
   if (ad === 0) span = 'today';

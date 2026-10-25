@@ -8,6 +8,7 @@ import { effectiveBucket, effectiveNote, isEmpty, type Decision, type FacetSpec,
 import { buildStacks, type StackIndex } from '../../src/core/stacks.ts';
 import type { SessionMeta } from '../../src/node/server.ts';
 import { api, type Summary } from './api.ts';
+import { parseDayInput } from './dates.ts';
 
 export const BUCKET_FACET = '\u0000bucket';
 
@@ -33,6 +34,8 @@ export const saveState = signal<'saved' | 'saving' | 'error'>('saved');
 export const saveError = signal<string | null>(null);
 export const finished = signal<Summary | null>(null);
 export const helpOpen = signal(false);
+/** The day most recently put on an item; an empty day input means this one again. */
+export const lastDay = signal<string | null>(null);
 
 const undoStack: DecisionOp[][] = [];
 export const canUndo = signal(false);
@@ -133,12 +136,16 @@ export function countsFor(spec: FacetSpec): FacetCount[] {
   const pool = d.items.filter((it) => matches(it, f, q, hideTriaged.value));
   if (spec.field !== BUCKET_FACET) return facetCounts(pool, spec);
   const counts = new Map<string, number>();
-  for (const v of d.mapping.buckets!.values) counts.set(v, 0);
+  const fixed = d.mapping.buckets!.values;
+  for (const v of fixed) counts.set(v, 0);
   for (const it of pool) {
     const v = bucketOf(it) ?? NONE;
     counts.set(v, (counts.get(v) ?? 0) + 1);
   }
-  return [...counts].map(([value, count]) => ({ value, count }));
+  // The listed values in key order, then days and anything else in order, then (none).
+  const extra = [...counts.keys()].filter((v) => v !== NONE && !fixed.includes(v)).sort();
+  const none = counts.has(NONE) ? [NONE] : [];
+  return [...fixed, ...extra, ...none].map((value) => ({ value, count: counts.get(value)! }));
 }
 
 // ---- rows: what the list actually shows ----------------------------------------------------
@@ -287,6 +294,16 @@ export function assign(bucket: string | null, ids = targetIds()): void {
   if (!ids.length || !buckets.value) return;
   apply([{ op: 'bucket', ids, bucket }]);
   if (selected.value.size) selected.value = new Set();
+}
+
+/** Put the targets on the day `text` names (see parseDayInput); empty text means the last day
+ *  used. False if the text is not a day, so the input can say so. */
+export function assignDay(text: string, ids = targetIds()): boolean {
+  const day = text.trim() ? parseDayInput(text) : lastDay.value;
+  if (!day) return false;
+  lastDay.value = day;
+  assign(day, ids);
+  return true;
 }
 
 export function setNote(id: string, note: string): void {

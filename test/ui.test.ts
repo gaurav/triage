@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import { buildDocument } from '../src/core/document.ts';
 import { inferMapping, resolveMapping } from '../src/core/infer.ts';
 import { toItems, type Raw } from '../src/core/model.ts';
+import { parseDayInput, toDay } from '../ui/shared/dates.ts';
 import { formatDate, miniChips, rowChipSpecs } from '../ui/shared/format.ts';
 
 const fixture = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8')) as Raw[];
@@ -60,5 +61,45 @@ describe('formatDate', () => {
     assert.deepEqual(formatDate('2026-10-21T09:00:00Z', now), { abs: '2026-10-21', rel: '3 days ago' });
     assert.deepEqual(formatDate('2026-11-14', now), { abs: '2026-11-14', rel: 'in 3 weeks' });
     assert.deepEqual(formatDate('not a date', now), { abs: 'not a date', rel: '' });
+  });
+
+  it('keeps a bare day as that day whatever the timezone', () => {
+    // '2026-10-24' parses as local midnight; toISOString would move it to the 23rd east of UTC.
+    assert.equal(formatDate('2026-10-24').abs, '2026-10-24');
+    assert.equal(formatDate('2026-10-26', new Date(2026, 9, 24, 23, 30)).rel, 'in 2 days', 'calendar days, not rounded hours');
+    assert.equal(toDay(new Date(2026, 0, 5)), '2026-01-05');
+  });
+});
+
+describe('parseDayInput', () => {
+  const sat = new Date(2026, 9, 24, 15, 30); // Saturday 24 October 2026, local time
+  const p = (s: string) => parseDayInput(s, sat);
+
+  it('reads a written day, and rejects one that does not exist', () => {
+    assert.equal(p('2026-10-27'), '2026-10-27');
+    assert.equal(p(' 2026-10-27 '), '2026-10-27');
+    assert.equal(p('2026-02-30'), null);
+    assert.equal(p('27/10/2026'), null);
+  });
+
+  it('counts from today', () => {
+    assert.equal(p('today'), '2026-10-24');
+    assert.equal(p('tomorrow'), '2026-10-25');
+    assert.equal(p('+3'), '2026-10-27');
+    assert.equal(p('10'), '2026-11-03');
+  });
+
+  it('finds the next weekday, never today, and "next" skips a week', () => {
+    assert.equal(p('mon'), '2026-10-26');
+    assert.equal(p('Monday'), '2026-10-26');
+    assert.equal(p('sat'), '2026-10-31', 'the coming Saturday, not today');
+    assert.equal(p('next mon'), '2026-11-02');
+    assert.equal(p('fri'), '2026-10-30');
+  });
+
+  it('says no to anything else', () => {
+    assert.equal(p(''), null);
+    assert.equal(p('soon'), null);
+    assert.equal(p('x'), null);
   });
 });

@@ -10,6 +10,7 @@ export interface KeyHelp {
 export const KEY_HELP: KeyHelp[] = [
   { keys: 'j / ↓, k / ↑', does: 'move' },
   { keys: '1 – 9', does: 'put the item (or the whole stack, or the selection) in that bucket' },
+  { keys: 'd', does: 'put the item on a day, when the bucket field takes one: 2026-10-27, mon, next fri, +3, today' },
   { keys: '0, ⌫', does: 'clear the bucket (restores what the input had)' },
   { keys: 'x', does: 'expand or collapse a stack of duplicates' },
   { keys: 'space', does: 'select / deselect; digits then apply to the selection' },
@@ -28,6 +29,7 @@ export const KEY_HELP: KeyHelp[] = [
 export interface KeyHooks {
   focusSearch(): void;
   focusNote(): void;
+  focusDay(): void;
   requestDone(): void;
 }
 
@@ -62,6 +64,10 @@ export function installKeys(hooks: KeyHooks): () => void {
     else if (k === 'z') S.undo();
     else if (k === '/') hooks.focusSearch();
     else if (k === 'n') hooks.focusNote();
+    else if (k === 'd') {
+      if (S.buckets.value?.date) hooks.focusDay();
+      else return;
+    }
     else if (k === 'h') S.hideTriaged.value = !S.hideTriaged.value;
     else if (k === 'g') S.cycleGroupBy();
     else if (k === '?') S.helpOpen.value = !S.helpOpen.value;

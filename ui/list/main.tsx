@@ -3,7 +3,7 @@
 import { render } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { ABSENT, NONE, PRESENT } from '../../src/core/facets.ts';
-import type { FacetSpec, Item } from '../../src/core/model.ts';
+import { isDay, type FacetSpec, type Item } from '../../src/core/model.ts';
 import { Detail } from '../shared/Detail.tsx';
 import { formatDate, miniChips, plural, rowChipSpecs } from '../shared/format.ts';
 import { installKeys, KEY_HELP } from '../shared/keys.ts';
@@ -15,6 +15,7 @@ const HEADER_H = 26;
 function App() {
   const searchRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  const dayRef = useRef<HTMLInputElement | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ function App() {
     const off = installKeys({
       focusSearch: () => searchRef.current?.focus(),
       focusNote: () => noteRef.current?.focus(),
+      focusDay: () => dayRef.current?.focus(),
       requestDone: () => requestDone(),
     });
     return () => {
@@ -51,7 +53,7 @@ function App() {
       <Header onDone={requestDone} />
       <Sidebar searchRef={searchRef} />
       <List />
-      <Detail item={cursorItem} stackIds={stackIds} noteRef={noteRef} />
+      <Detail item={cursorItem} stackIds={stackIds} noteRef={noteRef} dayRef={dayRef} />
       {S.helpOpen.value && <Help />}
       {confirming && (
         <div class="modal" onClick={() => setConfirming(false)}>
@@ -177,8 +179,11 @@ function Facet({ spec }: { spec: FacetSpec }) {
           const keyIndex = isBucket ? bucketKeys.indexOf(value) : -1;
           return (
             <li key={value} class={`${on ? 'on' : ''} ${count === 0 ? 'zero' : ''}`} onClick={() => S.toggleFacet(spec.field, value)}>
-              {isBucket && <kbd>{value === NONE ? '0' : keyIndex < 9 ? keyIndex + 1 : '·'}</kbd>}
-              <span class="val">{label(value)}</span>
+              {isBucket && <kbd>{value === NONE ? '0' : keyIndex >= 0 && keyIndex < 9 ? keyIndex + 1 : isDay(value) ? 'd' : '·'}</kbd>}
+              <span class="val">
+                {label(value)}
+                {isBucket && isDay(value) && <span class="muted"> {formatDate(value).rel}</span>}
+              </span>
               <span class="n">{count}</span>
             </li>
           );
@@ -299,7 +304,11 @@ function Row({ row, style }: { row: Extract<S.Row, { kind: 'item' }>; style: Rec
       {miniChips(item, chips).map(([field, text]) => (
         <span class="mini" key={field} title={field}>{text}</span>
       ))}
-      {bucket !== undefined && <span class={`badge b-${slug(bucket)}`}>{bucket}</span>}
+      {bucket !== undefined && (
+        <span class={`badge b-${slug(bucket)} ${isDay(bucket) ? 'b-day' : ''}`} title={isDay(bucket) ? formatDate(bucket).rel : ''}>
+          {bucket}
+        </span>
+      )}
     </div>
   );
 }

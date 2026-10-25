@@ -2,11 +2,11 @@
 import DOMPurify from 'dompurify';
 import { useState } from 'preact/hooks';
 import { facetValues, NONE } from '../../src/core/facets.ts';
-import { asString, isEmpty, type Item } from '../../src/core/model.ts';
+import { asString, isDay, isEmpty, type Item } from '../../src/core/model.ts';
 import { childLabel, formatDate, formatMinutes, looksLikeHtml, plural } from './format.ts';
 import * as S from './state.ts';
 
-export function Detail({ item, stackIds, noteRef }: { item: Item | null; stackIds: string[]; noteRef: { current: HTMLTextAreaElement | null } }) {
+export function Detail({ item, stackIds, noteRef, dayRef }: { item: Item | null; stackIds: string[]; noteRef: { current: HTMLTextAreaElement | null }; dayRef: { current: HTMLInputElement | null } }) {
   const d = S.doc.value!;
   if (!item) return <aside class="detail empty">Nothing selected.</aside>;
   const m = d.mapping;
@@ -19,7 +19,12 @@ export function Detail({ item, stackIds, noteRef }: { item: Item | null; stackId
     <aside class="detail">
       <h2>{item.title || <span class="muted">(untitled)</span>}</h2>
       <div class="chips">
-        {bucket !== undefined && <span class="chip bucket">{bucket}</span>}
+        {bucket !== undefined && (
+          <span class="chip bucket">
+            {bucket}
+            {isDay(bucket) && <span class="rel"> · {formatDate(bucket).rel}</span>}
+          </span>
+        )}
         {stackIds.length > 1 && <span class="chip stack">×{stackIds.length} duplicates</span>}
         {item.priority && <span class="chip priority">{item.priority}</span>}
         {m.facets
@@ -63,6 +68,7 @@ export function Detail({ item, stackIds, noteRef }: { item: Item | null; stackId
           </ul>
         </section>
       )}
+      {m.buckets?.date && <Day key={item.id} dayRef={dayRef} />}
       {m.note && <Note key={item.id} item={item} noteRef={noteRef} />}
       <dl class="fields">
         {detailFields.filter((f) => !isEmpty(item.raw[f])).map((f) => (
@@ -108,6 +114,47 @@ function Field({ name, value }: { name: string; value: unknown }) {
       <dt>{name}</dt>
       <dd>{shown}</dd>
     </div>
+  );
+}
+
+// The day input. Enter puts the item (or its stack, or the selection) on the day typed; empty
+// Enter repeats the last day. Text that is not a day stays put and is marked, so nothing is
+// assigned by accident. Keyed by item id like Note, for the same reason.
+function Day({ dayRef }: { dayRef: { current: HTMLInputElement | null } }) {
+  const [text, setText] = useState('');
+  const [bad, setBad] = useState(false);
+  const last = S.lastDay.value;
+  return (
+    <section class="day">
+      <h3>day</h3>
+      <input
+        type="text"
+        ref={(el) => {
+          dayRef.current = el;
+        }}
+        value={text}
+        class={bad ? 'bad' : ''}
+        placeholder={last ? `d, then Enter for ${last} again; or 2026-10-27, mon, next fri, +3, today` : 'd, then 2026-10-27, mon, next fri, +3 or today, then Enter'}
+        onInput={(e) => {
+          setText((e.target as HTMLInputElement).value);
+          setBad(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            // Cancel: the global handler blurs; a half-typed day must not wait for the next Enter.
+            setText('');
+            setBad(false);
+            return;
+          }
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          if (S.assignDay(text)) {
+            setText('');
+            (e.target as HTMLInputElement).blur();
+          } else setBad(true);
+        }}
+      />
+    </section>
   );
 }
 

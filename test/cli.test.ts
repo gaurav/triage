@@ -87,22 +87,22 @@ describe('chaff CLI', () => {
     const input = join(dir, 'list.json');
     writeFileSync(input, readFileSync(join(FIXTURES, 'list.json')));
     const out = join(dir, 'decided.json');
-    const s = await start([input, '--out', out, '--assign', 'bucket=now,later', '--note', 'why', '--log', join(dir, 'events.ndjson')], dir);
+    const s = await start([input, '--out', out, '--assign', 'bucket=now,later,@date', '--note', 'why', '--log', join(dir, 'events.ndjson')], dir);
     assert.ok(existsSync(out), 'the output exists from the start');
 
     const d = await api(s, 'GET', '/api/document');
     assert.equal(d.status, 200);
     assert.equal(d.body.doc.items.length, 5);
-    assert.deepEqual(d.body.doc.mapping.buckets, { field: 'bucket', values: ['now', 'later', 'someday'] });
+    assert.deepEqual(d.body.doc.mapping.buckets, { field: 'bucket', values: ['now', 'later', 'someday'], date: true });
     assert.equal(d.body.meta.ui, 'list');
 
     const page = await fetch(s.url);
     assert.equal(page.status, 200);
     assert.match(await page.text(), /<div id="app">/);
 
-    const r = await api(s, 'POST', '/api/ops', { ops: [{ op: 'bucket', ids: ['1', '2'], bucket: 'now' }, { op: 'note', ids: ['1'], note: 'dup of 2' }], effort: { keys: 3 } });
+    const r = await api(s, 'POST', '/api/ops', { ops: [{ op: 'bucket', ids: ['1', '2'], bucket: 'now' }, { op: 'note', ids: ['1'], note: 'dup of 2' }, { op: 'bucket', ids: ['4'], bucket: '2026-10-27' }], effort: { keys: 3 } });
     assert.equal(r.status, 200);
-    assert.equal(r.body.summary.triaged, 3);
+    assert.equal(r.body.summary.triaged, 4);
 
     const done = await api(s, 'POST', '/api/done');
     assert.equal(done.status, 200);
@@ -112,10 +112,10 @@ describe('chaff CLI', () => {
       [1, 'now', 'dup of 2'],
       [2, 'now', undefined],
       [3, 'someday', undefined],
-      [4, undefined, undefined],
+      [4, '2026-10-27', undefined],
       [5, undefined, undefined],
     ]);
-    assert.match(s.stderr(), /done: 3\/5 triaged \(now 2, later 0, someday 1\), 1 noted/);
+    assert.match(s.stderr(), /done: 4\/5 triaged \(now 2, later 0, someday 1, 2026-10-27 1\), 1 noted/);
     const events = readFileSync(join(dir, 'events.ndjson'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
     assert.equal(events.length, 3, 'start, one change, end');
     assert.equal(events[1].effort.keys, 3);
@@ -129,10 +129,12 @@ describe('chaff CLI', () => {
     assert.equal(clobber.status, 1);
     assert.match(clobber.stderr, /exists; --resume/);
 
-    const s = await start([input, '--out', out, '--assign', 'bucket=now,later', '--note', 'why', '--resume'], dir);
-    assert.match(s.stderr(), /resumed 2 decision\(s\)/);
+    // Resumed with @date: the day on 4 is a decision, not a new keyed value.
+    const s = await start([input, '--out', out, '--assign', 'bucket=now,later,@date', '--note', 'why', '--resume'], dir);
+    assert.match(s.stderr(), /resumed 3 decision\(s\)/);
     const d = await api(s, 'GET', '/api/document');
-    assert.deepEqual(d.body.doc.decisions, { '1': { bucket: 'now', note: 'dup of 2' }, '2': { bucket: 'now' } });
+    assert.deepEqual(d.body.doc.decisions, { '1': { bucket: 'now', note: 'dup of 2' }, '2': { bucket: 'now' }, '4': { bucket: '2026-10-27' } });
+    assert.deepEqual(d.body.doc.mapping.buckets.values, ['now', 'later', 'someday']);
     await api(s, 'POST', '/api/ops', { ops: [{ op: 'bucket', ids: ['4'], bucket: 'later' }] });
     s.child.kill('SIGINT');
     assert.equal(await s.exit, 2);
