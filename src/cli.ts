@@ -29,7 +29,8 @@ Interpretation comes from heuristics, then <input>.chaff-map.json if present, th
 
 Options
   --out FILE          output path (default: <input>.triaged.<ext>; - for stdout; required for stdin)
-  --assign F[=a,b,..] bucket field to write, with its values in key order (keys 1-9)
+  --assign F[=a,b,..] bucket field to write, with its values in key order (keys 1-9);
+                      @date among them lets d put an item on a day (2026-10-27, mon, +3)
   --bucket VALUE      one more bucket value, exact (repeatable; for names with commas)
   --order F           also write each item's final position into F
   --note F            allow a free-text note per item, written into F
@@ -152,7 +153,7 @@ function inspect(input: string, mapPath: string | undefined, flags: MappingFlags
   w.write(`  id: ${mapping.id}   title: ${mapping.title || '(none found)'}   body: ${mapping.body ?? '-'}\n`);
   const dates = Object.entries(mapping.dates).map(([s, f]) => `${s}=${f}`).join(' ');
   w.write(`  dates: ${dates || '-'}   priority: ${mapping.priority ?? '-'}   url: ${mapping.url ?? '-'}   children: ${mapping.children ?? '-'}\n`);
-  if (mapping.buckets) w.write(`  buckets: ${mapping.buckets.field} = ${mapping.buckets.values.join(', ') || '(none yet)'}\n`);
+  if (mapping.buckets) w.write(`  buckets: ${mapping.buckets.field} = ${mapping.buckets.values.join(', ') || '(none yet)'}${mapping.buckets.date ? ' or a day (d)' : ''}\n`);
   const stacks = buildStacks(doc.items, mapping.stack);
   const stacked = [...stacks.stacks.values()].reduce((n, s) => n + s.ids.length, 0);
   w.write(`  stack on: ${mapping.stack === false ? '(off)' : mapping.stack}   ${stacks.stacks.size} stack(s) covering ${stacked} item(s)\n`);

@@ -23,6 +23,14 @@ export interface BucketSpec {
   field: string;
   /** Allowed values, in key order: the first gets key 1, and so on up to 9. */
   values: string[];
+  /** The field also takes any day (`2026-10-27`), chosen with the `d` key. A day is a bucket
+   *  value like the others, so an item is in a named bucket or on a day, never both. */
+  date?: boolean;
+}
+
+/** A bare calendar day, the only form a date bucket takes. */
+export function isDay(v: unknown): v is string {
+  return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 }
 
 /**

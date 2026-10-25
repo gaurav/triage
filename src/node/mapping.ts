@@ -1,7 +1,7 @@
 // Reads and writes the mapping sidecar and turns CLI flags into a Mapping overlay.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { inferMapping, resolveMapping } from '../core/infer.ts';
-import { isRecord, type FacetSpec, type Mapping, type ResolvedMapping } from '../core/model.ts';
+import { isDay, isRecord, type FacetSpec, type Mapping, type ResolvedMapping } from '../core/model.ts';
 import { InputError, type Dataset } from './load.ts';
 
 export function sidecarPath(inputPath: string): string {
@@ -55,8 +55,11 @@ export function flagsToMapping(f: MappingFlags): Mapping {
   if (f.assign || f.bucket?.length) {
     const [field, list] = (f.assign ?? '').split('=', 2);
     if (!field) throw new InputError('--bucket needs --assign FIELD to say which field the buckets are written to');
-    const values = [...(list ? list.split(',').map((s) => s.trim()).filter(Boolean) : []), ...(f.bucket ?? [])];
+    const all = [...(list ? list.split(',').map((s) => s.trim()).filter(Boolean) : []), ...(f.bucket ?? [])];
+    // `@date` is not a value but permission: the field may also hold a day.
+    const values = all.filter((v) => v !== '@date');
     m.buckets = { field, values };
+    if (values.length < all.length) m.buckets.date = true;
   }
   if (f.order) m.order = f.order;
   if (f.note) m.note = f.note;
@@ -101,7 +104,8 @@ export function buildMapping(ds: Dataset, opts: { mapPath?: string; inputPath?: 
     const seen = new Set(mapping.buckets.values);
     for (const raw of ds.items) {
       const v = raw[mapping.buckets.field];
-      if (typeof v === 'string' && v && !seen.has(v)) {
+      // Days in a date bucket are not listed: they would eat the number keys.
+      if (typeof v === 'string' && v && !seen.has(v) && !(mapping.buckets.date && isDay(v))) {
         seen.add(v);
         mapping.buckets.values.push(v);
       }

@@ -69,6 +69,17 @@ describe('flagsToMapping', () => {
     assert.deepEqual(flagsToMapping({ sort: 'due:desc' }).sort, { field: 'due', desc: true });
   });
 
+  it('reads @date as permission for a day, not as a value', () => {
+    assert.deepEqual(flagsToMapping({ assign: 'action=skip,delete,@date' }).buckets, { field: 'action', values: ['skip', 'delete'], date: true });
+    assert.equal(flagsToMapping({ assign: 'action=skip' }).buckets?.date, undefined);
+  });
+
+  it('does not list the days already in a date bucket as keyed values', () => {
+    const ds = parseDataset('[{"id":1,"action":"2026-10-27"},{"id":2,"action":"later"},{"id":3}]', { path: 'x.json' });
+    assert.deepEqual(buildMapping(ds, { flags: { assign: 'action=skip,@date' } }).mapping.buckets, { field: 'action', values: ['skip', 'later'], date: true });
+    assert.deepEqual(buildMapping(ds, { flags: { assign: 'action=skip' } }).mapping.buckets?.values, ['skip', '2026-10-27', 'later'], 'without @date a day is a value like any other');
+  });
+
   it('adds bucket values already present in the input', () => {
     const { mapping } = docFor('list.json', { assign: 'bucket=now' });
     assert.deepEqual(mapping.buckets?.values, ['now', 'someday']);
@@ -82,8 +93,9 @@ describe('serialise', () => {
   });
 
   it('writes bucket, note and order, keeps every other field, and follows the UI order', () => {
-    const { ds, doc } = docFor('list.json', { assign: 'bucket=now,later', note: 'why', order: 'pos' });
+    const { ds, doc } = docFor('list.json', { assign: 'bucket=now,later,@date', note: 'why', order: 'pos' });
     applyOp(doc, { op: 'bucket', ids: ['5'], bucket: 'now' });
+    applyOp(doc, { op: 'bucket', ids: ['4'], bucket: '2026-10-27' });
     applyOp(doc, { op: 'note', ids: ['5'], note: 'first!' });
     applyOp(doc, { op: 'order', order: ['5', '1', '2', '3', '4'] });
     const out = JSON.parse(serialise(ds, doc)) as Record<string, unknown>[];
@@ -94,9 +106,10 @@ describe('serialise', () => {
     assert.equal(out[0]!['why'], 'first!');
     assert.equal(out[1]!['bucket'], 'someday', 'an undecided item keeps its input value');
     assert.equal(out[2]!['bucket'], undefined, 'no key is invented for undecided items');
+    assert.equal(out[4]!['bucket'], '2026-10-27', 'a day is written like any bucket');
     assert.deepEqual(out[2]!['labels'], ['bug', 'auth']);
     const s = summary(doc);
-    assert.deepEqual(s, { total: 5, triaged: 2, untriaged: 3, buckets: { now: 1, later: 0, someday: 1 }, noted: 1 });
+    assert.deepEqual(s, { total: 5, triaged: 3, untriaged: 2, buckets: { now: 1, later: 0, someday: 1, '2026-10-27': 1 }, noted: 1 });
   });
 
   it('keeps stack members together once the order changes, and only when stacking is on', () => {
