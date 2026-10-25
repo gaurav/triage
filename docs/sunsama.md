@@ -44,11 +44,11 @@ restarted (`claude --resume`). Sunsama's help pages do not list the tools; the o
 
 | Tool | Notes |
 | --- | --- |
-| `get_archived_tasks(offset)` | Pages of 15–20. **Paging is unreliable**: windows overlap and some tasks never appear at any offset, and `totalTasks` counts more than the list returns. Sweep offsets a few apart, union by `_id`, and check anything you expect but did not see with `get_task_by_id`. |
+| `get_archived_tasks(offset)` | Pages of 15–20. **Paging is unreliable**: windows overlap, and some archived tasks never appear at any offset, even once the ones it does return have been moved out (on 2026-10-25 it reported `totalTasks: 63` with every page empty). `totalTasks` itself is accurate. Sweep offsets a few apart, union by `_id`, check anything you expect but did not see with `get_task_by_id`, and treat the remainder as reachable only from the app's Archive panel (Shift+A). `search_tasks` does not surface archived tasks. |
 | `get_backlog_tasks(page, queryId)` | Backlog pages; later pages need the `queryId` from page 0. |
 | `get_task_by_id(taskId)` | One task with `integrationDetails`; the reliable way to confirm `isArchived`. |
 | `search_tasks(searchTerm?)` | 20 most recently modified tasks, no paging; useful to see what moved today. |
-| `unarchive_task(taskId, calendarDay)` | Out of the Archive and onto a day. |
+| `unarchive_task(taskId, calendarDay, sortOrder?)` | Out of the Archive and onto a day. Without `sortOrder` the task lands at the top of that day; read the day first (`sunsama://tasks/{day}`) and pass the day's largest `sortOrder` plus 2048·n to append below what is already planned. Moving to a day before Sunsama's today may auto-complete the task; Sunsama's day rolls at local midnight, so after midnight "today" is tomorrow's date. One call in ~140 failed with `Service Unavailable`; a retry succeeded. |
 | `move_task_to_backlog(taskId)` | Out of the Archive into the Backlog (`unarchive_task` says it does this without a day, but its schema requires one). |
 | `mark_task_as_completed(taskId)` | For a task that turns out to be done; `mark_task_as_incomplete` undoes it. |
 | `move_task_to_day` | For tasks that are not archived. |
