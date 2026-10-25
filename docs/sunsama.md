@@ -46,8 +46,10 @@ restarted (`claude --resume`). Sunsama's help pages do not list the tools; the o
 | `get_backlog_tasks(page, queryId)` | Backlog pages; later pages need the `queryId` from page 0. |
 | `get_task_by_id(taskId)` | One task with `integrationDetails`; the reliable way to confirm `isArchived`. |
 | `search_tasks(searchTerm?)` | 20 most recently modified tasks, no paging; useful to see what moved today. |
-| `unarchive_task(taskId, calendarDay)` | The write this recipe uses: out of the Archive and onto a day. |
-| `move_task_to_day`, `move_task_to_backlog` | For tasks that are not archived. |
+| `unarchive_task(taskId, calendarDay)` | Out of the Archive and onto a day. |
+| `move_task_to_backlog(taskId)` | Out of the Archive into the Backlog (`unarchive_task` says it does this without a day, but its schema requires one). |
+| `mark_task_as_completed(taskId)` | For a task that turns out to be done; `mark_task_as_incomplete` undoes it. |
+| `move_task_to_day` | For tasks that are not archived. |
 | `delete_task(taskId)` / `restore_task(taskId)` | Soft delete and its undo. |
 
 Read-only tools are safe to call freely. Treat everything else as one-at-a-time until a read-back
@@ -63,13 +65,16 @@ confirms it did what you meant.
    GitHub issue or PR is open, closed or merged (`githubState`). It judges nothing; the states are
    facets.
 3. **Triage.** `chaff out.json --map docs/sunsama/archive.chaff-map.json --out decisions.json`.
-   The sidecar sets the buckets to `skip`, `delete` or a day (`d`), a `comment` note, facets for
-   category, channel, service, `githubState` and `recurring`, and chips. Delete is for the rare
-   case, typically a task whose issue is already closed; a task that is probably done still gets
-   a day so it is verified before it is closed.
+   The sidecar sets the buckets to `skip` (leave it archived), `backlog`, `complete`, `delete`
+   or a day (`d`), a `comment` note, facets for category, channel, service, `githubState` and
+   `recurring`, and chips. Delete is for the rare case, typically a task whose issue is already
+   closed; a task that is probably done still gets a day so it is verified before it is closed,
+   and `complete` is for one that is known to be done.
 4. **Apply.** Read `decisions.json`. For each day, `unarchive_task` one task, read it back, then
-   the rest. Show the delete list by title and wait for an explicit yes before `delete_task`;
-   `restore_task` is the undo. Record each id, action and result in a file next to the decisions.
+   the rest; `move_task_to_backlog` for `backlog` and `mark_task_as_completed` for `complete`,
+   the same way. Show the delete list by title and wait for an explicit yes before
+   `delete_task`; `restore_task` is the undo. Record each id, action and result in a file next
+   to the decisions.
 
 What is not automated: the MCP responses land in the agent's context, not on disk, so step 1 is
 the agent writing them to files. A script that spoke to the server directly would need the OAuth

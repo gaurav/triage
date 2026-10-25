@@ -11,6 +11,6 @@
   "chips": ["channel", "githubState", "service"],
   "detail": ["githubTitle", "timeEstimate", "timeSpent", "ageDays", "recurrence", "inExport"],
   "sort": { "field": "createdAt" },
-  "buckets": { "field": "action", "values": ["skip", "delete"], "date": true },
+  "buckets": { "field": "action", "values": ["skip", "backlog", "complete", "delete"], "date": true },
   "note": "comment"
 }
