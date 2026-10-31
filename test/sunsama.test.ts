@@ -37,6 +37,20 @@ describe('docs/sunsama/build-archive.py', { skip: python ? false : 'python3 not 
     assert.equal(plants['recurring'], true);
     assert.equal(plants['folder'], 'Chores');
     assert.equal(plants['priority'], 'important');
+    assert.equal(report['inExport'], false, 'without --export nothing is from the export');
+  });
+
+  it('merges an export\'s notes and subtasks and says which records it had', () => {
+    const exportPath = join(dir, 'export.json');
+    writeFileSync(exportPath, JSON.stringify([{ id: '6a0000000000000000000002', text: 'Water the plants', notes: '<p>Every other day.</p>', latestDailyPriority: 'urgent' }]));
+    const out2 = join(dir, 'archive-with-export.json');
+    const r = spawnSync('python3', ['-I', SCRIPT, out2, join(FIXTURES, 'sunsama-mcp-page.json'), '--export', exportPath, '--no-github'], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    const [report, plants] = JSON.parse(readFileSync(out2, 'utf8')) as [Record<string, unknown>, Record<string, unknown>];
+    assert.equal(report['inExport'], false, 'a record the export lacks, such as a standing recurrence');
+    assert.equal(plants['inExport'], true);
+    assert.equal(plants['notes'], '<p>Every other day.</p>', 'the export fills notes the MCP record left empty');
+    assert.equal(plants['priority'], 'important', 'but the MCP priority wins when it is set');
   });
 
   it('is read by the committed sidecar as skip, backlog, complete, delete or a day', () => {
