@@ -4,3 +4,6 @@ node_modules/
 dist/
 *.triaged.json
 *.triaged.ndjson
+
+# Project MCP servers are personal; copy .mcp.json.default to .mcp.json
+/.mcp.json

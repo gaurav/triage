@@ -9,8 +9,8 @@ export interface KeyHelp {
 
 export const KEY_HELP: KeyHelp[] = [
   { keys: 'j / ↓, k / ↑', does: 'move' },
-  { keys: '1 – 9', does: 'put the item (or the whole stack, or the selection) in that bucket' },
-  { keys: 'd', does: 'put the item on a day, when the bucket field takes one: 2026-10-27, mon, next fri, +3, today' },
+  { keys: '1 – 9', does: 'put the item (or the whole stack, or the selection) in that bucket, and move on' },
+  { keys: 'd', does: 'put the item on a day, when the bucket field takes one: 2026-10-27, mon, next fri, +3, today; Enter moves on' },
   { keys: '0, ⌫', does: 'clear the bucket (restores what the input had)' },
   { keys: 'x', does: 'expand or collapse a stack of duplicates' },
   { keys: 'space', does: 'select / deselect; digits then apply to the selection' },

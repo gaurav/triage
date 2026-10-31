@@ -290,10 +290,30 @@ export function undo(): void {
   if (ops) apply(ops, { undo: true });
 }
 
+/** The first item row after the cursor that `ids` does not cover, or null at the end. */
+function keyAfterCursor(ids: string[]): string | null {
+  const c = cursor.value;
+  const i = c === null ? undefined : itemRowIndex.value.get(c);
+  if (i === undefined) return null;
+  const rs = rows.value;
+  for (let j = i + 1; j < rs.length; j++) {
+    const r = rs[j]!;
+    if (r.kind === 'item' && !ids.includes(r.item.id)) return r.key;
+  }
+  return null;
+}
+
+/** Put the targets in a bucket. A decision at the cursor then moves on to the next row, as j
+ *  would, so the keys read "decide, decide, decide"; clearing (a correction) and a decision
+ *  over a selection stay put. The next row is found before the op is applied: with triaged
+ *  rows hidden the cursor row is about to vanish, and the keep-visible effect would then jump
+ *  to the top of the list. */
 export function assign(bucket: string | null, ids = targetIds()): void {
   if (!ids.length || !buckets.value) return;
+  const next = bucket !== null && !selected.value.size ? keyAfterCursor(ids) : null;
   apply([{ op: 'bucket', ids, bucket }]);
   if (selected.value.size) selected.value = new Set();
+  else if (next !== null && itemRowIndex.value.has(next)) cursor.value = next;
 }
 
 /** Put the targets on the day `text` names (see parseDayInput); empty text means the last day

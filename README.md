@@ -92,6 +92,8 @@ chaff issues.json --title title --facet labels,milestone \
 
 Do not modify the input file while chaff runs, and treat exit 2 as "partial, resumable", not as
 failure. `chaff inspect file.json` tells you what chaff will make of a file before you serve it.
+[docs/sunsama.md](docs/sunsama.md) is a worked example: triaging a Sunsama Archive through its
+MCP server into skip, delete or a day, with a committed sidecar.
 
 ## Using it
 
@@ -112,7 +114,7 @@ failure. `chaff inspect file.json` tells you what chaff will make of a file befo
   present/absent facet, which is how "done vs open" is filtered in a task export.
 - **Stacks**: items whose normalised title matches collapse into one row with a count. A digit
   puts the whole stack in a bucket; `x` expands it so members can go separately.
-- **Keys**: `j`/`k` move, `1`–`9` assign, `d` puts the item on a day, `0` clears, `space` selects
+- **Keys**: `j`/`k` move, `1`–`9` assign and move on, `d` puts the item on a day (Enter, then it moves on), `0` clears, `space` selects
   several, `J`/`K` move a row, `n` note, `z` undo, `/` search, `h` hides what is already triaged, `g` groups by the next facet,
   `Enter` opens the item's link, `D` finishes, `?` lists them all.
 - Shift-click a row to select it; clicking "group" twice turns grouping off.

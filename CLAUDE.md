@@ -41,10 +41,17 @@ to try different triage UIs on the same data and the same contract; the README h
   URL; later writes are debounced through one `AtomicWriter`.
 - A test that spawns the CLI must kill the child on failure (see `children` in `cli.test.ts`),
   or the test process never exits and the failure is reported as a cancelled file.
+- A bucket assigned at the cursor (digit or day) moves the cursor to the next row; `0` and a
+  decision over a selection do not. `assign` finds that row before applying the op, because
+  with `h` on the cursor row vanishes and the keep-cursor-visible effect would jump to the top.
 - The Note component is keyed by item id. Resetting its text in an effect lost the first
   keystroke typed before the effect ran.
 - Real Sunsama exports are personal and live in the gitignored `data/`. The committed fixture is
-  synthetic: `node test/fixtures/make-sunsama-like.mjs` regenerates it.
+  synthetic: `node test/fixtures/make-sunsama-like.mjs` regenerates it. `docs/sunsama.md` has
+  the export's quirks, the MCP tools and the archive-triage recipe; `docs/sunsama/` holds the
+  sidecar, the script that turns MCP records into chaff input, and `filter-export.py`, which
+  strips Google document links from a new export. Run that before reading an export and work
+  from its filtered copy; don't open the raw export.
 
 ## Checking a UI change
 
