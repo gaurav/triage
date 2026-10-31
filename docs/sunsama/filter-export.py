@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Remove Google document links from a Sunsama export and list the URLs that remain.
 
-    python3 -I docs/sunsama/filter-export.py export.json [--out filtered.json] [--urls urls.json]
+    python3 -I docs/sunsama/filter-export.py export.json [--out filtered.json] [--urls urls.json] [--marker TEXT]
 
 Writes a copy of the export with every Google URL removed, and a list of every http(s) URL left
 in that copy with its domain and counts, most mentioned first. A Google URL is one on google.com
@@ -16,6 +16,9 @@ How a URL goes depends on where it is:
 - a link in `notes` whose text is the URL goes whole; a link with other text keeps the text;
 - a URL in a title or other text is cut out, with the `()` it was wrapped in;
 - a `url` field that is only a Google URL becomes null, and a `website` attachment to one is dropped.
+`--marker "[Google doc]"` puts that text where a URL was cut out of text or a link went whole, so
+"Look through https://docs.google.com/…" becomes "Look through [Google doc]" rather than
+"Look through ", and "(https://…)" becomes "([Google doc])".
 
 In the URL list, `count` is mentions (a link counts once, though its URL is in `href`, `text=`
 and the link text) and `tasks` is how many tasks, with their subtasks, mention the URL.
@@ -45,19 +48,22 @@ ANCHOR = re.compile(r'<a\b[^>]*\bhref="([^"]*)"[^>]*>(.*?)</a>', re.S)
 EXPORT_DAY = re.compile(r"(\d{4})-(\d{2})-(\d{2})T")
 
 
-def scrub(s, stats):
+def scrub(s, stats, marker):
     def anchor(m):
         stats["links in notes"] += 1
         text = m.group(1).strip()
-        return "" if text.startswith("http") or re.match(GOOGLE, text) else m.group(1)
+        if text.startswith("http") or re.match(GOOGLE, text):
+            return marker
+        return m.group(1)
 
     s = GOOGLE_ANCHOR.sub(anchor, s)
-    s, n = GOOGLE_URL.subn("", s)
+    s, n = GOOGLE_URL.subn(lambda m: marker, s)
     stats["urls in text"] += n
-    return s.replace(" ()", "").replace("()", "")
+    # "(marker)" still says something was there; "()" says nothing.
+    return s if marker else s.replace(" ()", "").replace("()", "")
 
 
-def strip_google(o, stats, key=None):
+def strip_google(o, stats, marker, key=None):
     if isinstance(o, dict):
         integ = o.get("integration")
         if (isinstance(integ, dict) and integ.get("service") == "website"
@@ -65,15 +71,15 @@ def strip_google(o, stats, key=None):
             o["integration"] = None
             stats["website attachments"] += 1
         for k, v in o.items():
-            o[k] = strip_google(v, stats, k)
+            o[k] = strip_google(v, stats, marker, k)
         return o
     if isinstance(o, list):
-        return [strip_google(v, stats) for v in o]
+        return [strip_google(v, stats, marker) for v in o]
     if isinstance(o, str) and re.search(GOOGLE, o):
         if key == "url" and GOOGLE_URL.fullmatch(o.strip()):
             stats["url fields"] += 1
             return None
-        return scrub(o, stats)
+        return scrub(o, stats, marker)
     return o
 
 
@@ -138,6 +144,7 @@ def main(argv):
 
     out_path = option("--out", None)
     urls_path = option("--urls", None)
+    marker = option("--marker", "")
     export_path = argv[0]
     out_path = out_path or default_out(export_path)
     urls_path = urls_path or os.path.join(os.path.dirname(export_path), "sunsama-urls.json")
@@ -146,7 +153,7 @@ def main(argv):
 
     tasks = json.load(open(export_path))
     stats = Counter()
-    tasks = strip_google(tasks, stats)
+    tasks = strip_google(tasks, stats, marker)
     # The export's layout, one compact task per line, so the two files diff line by line.
     with open(out_path, "w") as f:
         f.write("[\n" + ",\n".join(

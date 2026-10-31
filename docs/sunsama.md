@@ -40,6 +40,9 @@ keeps the export's layout (one task per line), so it diffs line by line against 
   text otherwise; a URL in a title is cut out with the `()` around it, which can leave a title
   like "Look through "; a `url` field that is only a Google URL becomes null and a `website`
   attachment to one is dropped.
+- `--marker "[Google doc]"` puts that text where a URL was cut out ("Look through [Google doc]",
+  "meeting ([Google doc])"), so a title still says something was there. The default is to leave
+  nothing.
 - `sunsama-urls.json` is every http(s) URL left, with its `domain`, `count` (mentions; a link
   counts once, though its URL is in `href`, `text=` and the link text) and `tasks` (tasks, with
   their subtasks, that mention it), most mentioned first.

@@ -99,4 +99,13 @@ describe('docs/sunsama/filter-export.py', { skip: python ? false : 'python3 not 
     ]);
   });
 
+  it('puts --marker where a URL was cut out of text', () => {
+    filter('--marker', '[Google doc]', '--out', join(dir, 'marked.json'), '--urls', join(dir, 'marked-urls.json'));
+    const [a, , c] = JSON.parse(readFileSync(join(dir, 'marked.json'), 'utf8')) as typeof report[];
+    assert.equal(a!.text, 'Write the report ([Google doc])');
+    assert.equal(a!.url, null, 'a url field is still emptied, not marked');
+    assert.equal(a!.notes, `<p>Doc: [Google doc]</p><p>Slides and <a href="${issue}">${issue}</a></p>`);
+    assert.equal(a!.subtasks[0]!.title, 'Look through [Google doc].');
+    assert.equal(c!.text, 'Fill in [Google doc] and [Google doc], not https://g.com/keep');
+  });
 });
