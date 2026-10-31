@@ -85,6 +85,7 @@ def main(argv):
             "subtasks": [{"title": s["title"], "completed": s.get("completed", False)} for s in t.get("subtasks", [])],
             "isArchived": t.get("isArchived", False),
             "isBacklogged": t.get("isBacklogged", False),
+            "inExport": e is not None,
         }
         if github:
             item.update(github_state(item["url"]))
