@@ -99,6 +99,9 @@ export function buildMapping(ds: Dataset, opts: { mapPath?: string; inputPath?: 
   }
   const mapping = resolveMapping(inferred, ...overlays);
   if (mapping.buckets) {
+    // The bucket facet shows the field's effective values, so an inferred facet on the same
+    // field would list the input's stale values a second time, under the same heading.
+    mapping.facets = mapping.facets.filter((f) => f.field !== mapping.buckets!.field);
     // Values already present in the bucket field count as buckets too, so an input that was
     // triaged before (or by a script) shows them with keys.
     const seen = new Set(mapping.buckets.values);

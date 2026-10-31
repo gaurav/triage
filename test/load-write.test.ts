@@ -84,6 +84,11 @@ describe('flagsToMapping', () => {
     const { mapping } = docFor('list.json', { assign: 'bucket=now' });
     assert.deepEqual(mapping.buckets?.values, ['now', 'someday']);
   });
+
+  it('drops an inferred facet on the bucket field, which the bucket facet already shows', () => {
+    assert.ok(docFor('list.json').mapping.facets.some((f) => f.field === 'bucket'), 'inferred as a facet when nothing is assigned');
+    assert.ok(!docFor('list.json', { assign: 'bucket=now' }).mapping.facets.some((f) => f.field === 'bucket'));
+  });
 });
 
 describe('serialise', () => {
