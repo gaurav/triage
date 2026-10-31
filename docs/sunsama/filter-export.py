@@ -3,16 +3,19 @@
 
     python3 -I docs/sunsama/filter-export.py export.json [--out filtered.json] [--urls urls.json]
 
-Writes a copy of the export with every https://*.google.*/ URL removed (Google Scholar links are
-kept: they are not documents), and a list of every URL left in that copy with its domain and
-counts, most mentioned first. The defaults put both next to the export:
-`sunsama-exports-filtered-2026oct31.json` (the day from the export's file name) and
-`sunsama-urls.json`. Only counts are printed, so running it shows nothing of the tasks.
+Writes a copy of the export with every Google URL removed, and a list of every http(s) URL left
+in that copy with its domain and counts, most mentioned first. A Google URL is one on google.com
+or a country domain of it, or on the short-link hosts goo.gl, forms.gle and g.co, or a subdomain
+of any of those (docs.google.com, maps.app.goo.gl), with or without `https://`; Google Scholar
+links are kept, as they are not documents. The defaults put
+both files next to the export: `sunsama-exports-filtered-2026oct31.json` (the day from the
+export's file name) and `sunsama-urls.json`. Only counts are printed, so running it shows nothing
+of the tasks.
 
 How a URL goes depends on where it is:
 - a link in `notes` whose text is the URL goes whole; a link with other text keeps the text;
 - a URL in a title or other text is cut out, with the `()` it was wrapped in;
-- a `url` field left empty becomes null, and a `website` attachment to a Google URL is dropped.
+- a `url` field that is only a Google URL becomes null, and a `website` attachment to one is dropped.
 
 In the URL list, `count` is mentions (a link counts once, though its URL is in `href`, `text=`
 and the link text) and `tasks` is how many tasks, with their subtasks, mention the URL.
@@ -26,7 +29,13 @@ import sys
 from collections import Counter
 from urllib.parse import urlparse
 
-GOOGLE = r"https?://(?!scholar\.google\.)[A-Za-z0-9.-]*\.google\.[A-Za-z.]+"
+# google.com and its country domains, Google's short-link hosts, and any subdomain of those.
+# The lookahead ends the host at a label boundary, so g.co does not match the start of g.com.
+HOST = (r"(?!scholar\.google\.)(?:[A-Za-z0-9-]+\.)*(?:google(?:\.[A-Za-z]{2,})+|goo\.gl|forms\.gle|g\.co)"
+        r"(?![A-Za-z0-9-]|\.[A-Za-z0-9])")
+# With a scheme, or without one when a path follows ("docs.google.com/document/d/…"); the
+# lookbehind keeps the schemeless form from matching inside a longer host or an email address.
+GOOGLE = r"(?:https?://" + HOST + r"|(?<![\w@./:-])" + HOST + r"(?=/))"
 # A bare Google URL ends at whitespace (nbsp too), a quote, an angle bracket or a paren;
 # trailing sentence punctuation stays in the text.
 GOOGLE_URL = re.compile(GOOGLE + r"""[^\s"'<>()]*[^\s"'<>().,;:!?]|""" + GOOGLE)
@@ -40,7 +49,7 @@ def scrub(s, stats):
     def anchor(m):
         stats["links in notes"] += 1
         text = m.group(1).strip()
-        return "" if text.startswith("http") else m.group(1)
+        return "" if text.startswith("http") or re.match(GOOGLE, text) else m.group(1)
 
     s = GOOGLE_ANCHOR.sub(anchor, s)
     s, n = GOOGLE_URL.subn("", s)
@@ -61,11 +70,10 @@ def strip_google(o, stats, key=None):
     if isinstance(o, list):
         return [strip_google(v, stats) for v in o]
     if isinstance(o, str) and re.search(GOOGLE, o):
-        new = scrub(o, stats)
-        if key == "url" and not new.strip():
+        if key == "url" and GOOGLE_URL.fullmatch(o.strip()):
             stats["url fields"] += 1
             return None
-        return new
+        return scrub(o, stats)
     return o
 
 

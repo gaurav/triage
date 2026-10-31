@@ -34,13 +34,15 @@ and prints only counts. Work from the filtered copy from then on; an agent shoul
 raw export, nor look the tasks up through the MCP server to learn about them. The filtered copy
 keeps the export's layout (one task per line), so it diffs line by line against the raw one.
 
-- Every `https://*.google.*/` URL goes, except Google Scholar, which is not a document. A link
-  in the notes goes whole when its text is the URL and keeps its text otherwise; a URL in a
-  title is cut out with the `()` around it, which can leave a title like "Look through ";
-  an empty `url` becomes null and a `website` attachment to a Google URL is dropped.
-- `sunsama-urls.json` is every URL left, with its `domain`, `count` (mentions; a link counts
-  once, though its URL is in `href`, `text=` and the link text) and `tasks` (tasks, with their
-  subtasks, that mention it), most mentioned first.
+- Every Google URL goes: `google.com`, its country domains, the short links `goo.gl`,
+  `forms.gle` and `g.co`, and their subdomains, with or without `https://`. Google Scholar stays,
+  as it is not a document. A link in the notes goes whole when its text is the URL and keeps its
+  text otherwise; a URL in a title is cut out with the `()` around it, which can leave a title
+  like "Look through "; a `url` field that is only a Google URL becomes null and a `website`
+  attachment to one is dropped.
+- `sunsama-urls.json` is every http(s) URL left, with its `domain`, `count` (mentions; a link
+  counts once, though its URL is in `href`, `text=` and the link text) and `tasks` (tasks, with
+  their subtasks, that mention it), most mentioned first.
 - `--out` and `--urls` choose other paths. `test/sunsama.test.ts` runs the script on a synthetic
   export.
 

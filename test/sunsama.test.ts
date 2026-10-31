@@ -70,14 +70,19 @@ describe('docs/sunsama/filter-export.py', { skip: python ? false : 'python3 not 
     ],
   };
   const papers = { id: 'b2', text: 'Make a Google Sheet of papers', url: null, notes: `<p><a href="${scholar}">${scholar}</a></p>`, subtasks: [] };
+  const form = { id: 'c3', text: 'Fill in https://forms.gle/AbC1 and docs.google.com/document/d/xyz, not https://g.com/keep', url: null, notes: '', subtasks: [] };
+  const exportPath = join(dir, 'sunsama-data-export-x-2026-10-31T06-27-15.json');
+  writeFileSync(exportPath, JSON.stringify([report, papers, form]));
+  const filter = (...args: string[]) => {
+    const r = spawnSync('python3', ['-I', join(ROOT, 'docs/sunsama/filter-export.py'), exportPath, ...args], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    return r;
+  };
 
   it('removes Google document URLs, keeps Scholar, and lists the URLs left next to the export', () => {
-    const exportPath = join(dir, 'sunsama-data-export-x-2026-10-31T06-27-15.json');
-    writeFileSync(exportPath, JSON.stringify([report, papers]));
-    const r = spawnSync('python3', ['-I', join(ROOT, 'docs/sunsama/filter-export.py'), exportPath], { encoding: 'utf8' });
-    assert.equal(r.status, 0, r.stderr);
+    const r = filter();
     assert.ok(!r.stderr.includes('report'), 'only counts are printed, never task text');
-    const [a, b] = JSON.parse(readFileSync(join(dir, 'sunsama-exports-filtered-2026oct31.json'), 'utf8')) as typeof report[];
+    const [a, b, c] = JSON.parse(readFileSync(join(dir, 'sunsama-exports-filtered-2026oct31.json'), 'utf8')) as typeof report[];
     assert.equal(a!.text, 'Write the report');
     assert.equal(a!.url, null);
     assert.equal(a!.notes, `<p>Doc: </p><p>Slides and <a href="${issue}">${issue}</a></p>`);
@@ -85,10 +90,13 @@ describe('docs/sunsama/filter-export.py', { skip: python ? false : 'python3 not 
     assert.equal(a!.subtasks[0]!.integration, null);
     assert.deepEqual(a!.subtasks[1], report.subtasks[1]);
     assert.deepEqual(b, papers);
+    assert.equal(c!.text, 'Fill in  and , not https://g.com/keep', 'short links and schemeless URLs go; g.com is not g.co');
     const urls = JSON.parse(readFileSync(join(dir, 'sunsama-urls.json'), 'utf8'));
     assert.deepEqual(urls, [
       { url: issue, domain: 'github.com', count: 3, tasks: 1 },
+      { url: 'https://g.com/keep', domain: 'g.com', count: 1, tasks: 1 },
       { url: 'https://scholar.google.com/scholar?cites=1&hl=en', domain: 'scholar.google.com', count: 1, tasks: 1 },
     ]);
   });
+
 });
