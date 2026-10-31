@@ -13,8 +13,12 @@ regenerates it). Things that are not obvious from the field names:
 - `id` is the task's Mongo id, the same `_id` the MCP server uses, so the two join directly.
 - `startDate` is the day the task currently sits on. It moves every time a task rolls over, so
   for a stale task it is the last day it rolled to, not when it was planned.
-- `startDate` and `completedDate` both blank means Backlog or Archive; the export does not say
-  which. The MCP server does (`isBacklogged`, `isArchived`).
+- The export does not say what is archived. An archived task usually keeps the last day it
+  rolled to in `startDate`, so the candidates for an archive pass are the incomplete tasks dated
+  before today; a task with `startDate` and `completedDate` both blank is in the Backlog or was
+  archived without ever being on a day. Either way the MCP server decides (`isBacklogged`,
+  `isArchived`): on 2026-10-31, 85 export tasks were dated before today, 65 were archived and 20
+  had been rolled onto today a few minutes after the archive run that preceded the export.
 - `timeEstimate` is minutes. `channel` and `context` carry the same value.
 - `backlogPriority` is filled on every row with the same value, which is why inference ignores it.
 - Standing recurrences (the templates behind "every Monday") are not in the export. A filtered
@@ -48,6 +52,10 @@ keeps the export's layout (one task per line), so it diffs line by line against 
   their subtasks, that mention it), most mentioned first.
 - `--out` and `--urls` choose other paths. `test/sunsama.test.ts` runs the script on a synthetic
   export.
+
+The Archive refills: the tasks the 2026-10-25 pass put on 2026-10-25 and 2026-10-26 rolled over
+again and were archived on 2026-10-31, and a nightly run (lastModified 06:00 UTC) archives tasks
+that have rolled N days. A pass a week later is normal, not a sign the first one failed.
 
 ## Archive and Backlog
 
@@ -93,7 +101,10 @@ confirms it did what you meant.
 
 1. **Collect.** Call `get_archived_tasks` at offsets a few apart until the union stops growing,
    then `get_task_by_id` for candidates from the export (incomplete, recently rolled over) that
-   never appeared. Save each response as a JSON file.
+   never appeared. Save each response as a JSON file. On 2026-10-31 the offsets 0, 15, 30, …
+   reached 41 of 71 archived tasks, offsets 5, 10, 20, … 12 more, and `get_task_by_id` on the
+   export's candidates the last 18 (mostly stale occurrences of recurring tasks: "Catch up on
+   incoming", "Go through Slack messages"), so do all three.
 2. **Build the list.** `docs/sunsama/build-archive.py out.json page*.json --export export.json`
    (`test/sunsama.test.ts` runs it on a synthetic page and reads the result with the sidecar)
    dedupes by `_id`, merges the export's notes and subtasks, and asks `gh` whether each linked
@@ -106,7 +117,9 @@ confirms it did what you meant.
    closed; a task that is probably done still gets a day so it is verified before it is closed,
    and `complete` is for one that is known to be done.
 4. **Apply.** Read `decisions.json`. For each day, `unarchive_task` one task, read it back, then
-   the rest; `move_task_to_backlog` for `backlog` and `mark_task_as_completed` for `complete`,
+   the rest (70 calls sent at once all succeeded on 2026-10-31; a day read afterwards is the
+   cheapest check that they landed in order). Sunsama recomputes `timeEstimate` from the
+   subtasks when an archived task lands on a day, so a "0 minutes" task may come back as hours; `move_task_to_backlog` for `backlog` and `mark_task_as_completed` for `complete`,
    the same way (those two paths are written from the tool descriptions; the first pass used
    neither, so verify the read-back the first time). Show the delete list by title and wait for an explicit yes before
    `delete_task`; `restore_task` is the undo. **A task with elapsed time (`actualTimeSpent`) is
