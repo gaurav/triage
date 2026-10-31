@@ -1,8 +1,9 @@
 // The Sunsama recipe in docs/sunsama.md: the script that turns MCP task records into chaff
-// input, and the committed sidecar that reads its output. Skipped when python3 is missing.
+// input, the committed sidecar that reads its output, and the script that filters an export.
+// Skipped when python3 is missing.
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
@@ -48,5 +49,46 @@ describe('docs/sunsama/build-archive.py', { skip: python ? false : 'python3 not 
     assert.deepEqual(mapping.dates, { created: 'createdAt', due: 'dueDate', updated: 'lastWorkedOn' });
     const facets = mapping.facets.map((f) => `${f.field}:${f.mode}`);
     assert.ok(facets.includes('githubState:values') && facets.includes('recurring:values') && facets.includes('timeSpent:present'), facets.join(' '));
+  });
+});
+
+describe('docs/sunsama/filter-export.py', { skip: python ? false : 'python3 not found' }, () => {
+  const dir = mkdtempSync(join(tmpdir(), 'chaff-sunsama-filter-'));
+  after(() => rmSync(dir, { recursive: true, force: true }));
+  const doc = 'https://docs.google.com/document/d/abc/edit';
+  const issue = 'https://github.com/example/reports/issues/7';
+  const scholar = 'https://scholar.google.com/scholar?cites=1&amp;hl=en';
+  const report = {
+    id: 'a1',
+    text: `Write the report (${doc})`,
+    url: 'https://docs.google.com/spreadsheets/d/x/edit',
+    notes: `<p>Doc: <a target="_blank" href="${doc}" text="${doc}">${doc}</a></p>`
+      + `<p><a href="https://docs.google.com/presentation/d/p">Slides</a> and <a href="${issue}">${issue}</a></p>`,
+    subtasks: [
+      { title: `Look through ${doc}.`, integration: { service: 'website', identifier: { url: doc } } },
+      { title: `See ${issue}`, integration: { service: 'github', identifier: { url: issue } } },
+    ],
+  };
+  const papers = { id: 'b2', text: 'Make a Google Sheet of papers', url: null, notes: `<p><a href="${scholar}">${scholar}</a></p>`, subtasks: [] };
+
+  it('removes Google document URLs, keeps Scholar, and lists the URLs left next to the export', () => {
+    const exportPath = join(dir, 'sunsama-data-export-x-2026-10-31T06-27-15.json');
+    writeFileSync(exportPath, JSON.stringify([report, papers]));
+    const r = spawnSync('python3', ['-I', join(ROOT, 'docs/sunsama/filter-export.py'), exportPath], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(!r.stderr.includes('report'), 'only counts are printed, never task text');
+    const [a, b] = JSON.parse(readFileSync(join(dir, 'sunsama-exports-filtered-2026oct31.json'), 'utf8')) as typeof report[];
+    assert.equal(a!.text, 'Write the report');
+    assert.equal(a!.url, null);
+    assert.equal(a!.notes, `<p>Doc: </p><p>Slides and <a href="${issue}">${issue}</a></p>`);
+    assert.equal(a!.subtasks[0]!.title, 'Look through .');
+    assert.equal(a!.subtasks[0]!.integration, null);
+    assert.deepEqual(a!.subtasks[1], report.subtasks[1]);
+    assert.deepEqual(b, papers);
+    const urls = JSON.parse(readFileSync(join(dir, 'sunsama-urls.json'), 'utf8'));
+    assert.deepEqual(urls, [
+      { url: issue, domain: 'github.com', count: 3, tasks: 1 },
+      { url: 'https://scholar.google.com/scholar?cites=1&hl=en', domain: 'scholar.google.com', count: 1, tasks: 1 },
+    ]);
   });
 });
