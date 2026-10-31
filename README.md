@@ -114,7 +114,7 @@ MCP server into skip, delete or a day, with a committed sidecar.
   present/absent facet, which is how "done vs open" is filtered in a task export.
 - **Stacks**: items whose normalised title matches collapse into one row with a count. A digit
   puts the whole stack in a bucket; `x` expands it so members can go separately.
-- **Keys**: `j`/`k` move, `1`–`9` assign, `d` puts the item on a day, `0` clears, `space` selects
+- **Keys**: `j`/`k` move, `1`–`9` assign and move on, `d` puts the item on a day (Enter, then it moves on), `0` clears, `space` selects
   several, `J`/`K` move a row, `n` note, `z` undo, `/` search, `h` hides what is already triaged, `g` groups by the next facet,
   `Enter` opens the item's link, `D` finishes, `?` lists them all.
 - Shift-click a row to select it; clicking "group" twice turns grouping off.

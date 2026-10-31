@@ -41,6 +41,9 @@ to try different triage UIs on the same data and the same contract; the README h
   URL; later writes are debounced through one `AtomicWriter`.
 - A test that spawns the CLI must kill the child on failure (see `children` in `cli.test.ts`),
   or the test process never exits and the failure is reported as a cancelled file.
+- A bucket assigned at the cursor (digit or day) moves the cursor to the next row; `0` and a
+  decision over a selection do not. `assign` finds that row before applying the op, because
+  with `h` on the cursor row vanishes and the keep-cursor-visible effect would jump to the top.
 - The Note component is keyed by item id. Resetting its text in an effect lost the first
   keystroke typed before the effect ran.
 - Real Sunsama exports are personal and live in the gitignored `data/`. The committed fixture is

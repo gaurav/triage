@@ -1,7 +1,7 @@
 // Presentation helpers in ui/shared/ that need no DOM.
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
-import { describe, it } from 'node:test';
+import { before, describe, it } from 'node:test';
 import { buildDocument } from '../src/core/document.ts';
 import { inferMapping, resolveMapping } from '../src/core/infer.ts';
 import { toItems, type Raw } from '../src/core/model.ts';
@@ -101,5 +101,60 @@ describe('parseDayInput', () => {
     assert.equal(p(''), null);
     assert.equal(p('soon'), null);
     assert.equal(p('x'), null);
+  });
+});
+
+// state.ts is written for the browser (api.ts reads location at import), so it is imported after
+// a stub is in place; apply() then fails to reach a server and records a save error, which these
+// tests ignore.
+describe('assign moves the cursor on', () => {
+  let S: typeof import('../ui/shared/state.ts');
+  const raws: Raw[] = [
+    { id: 1, title: 'a' },
+    { id: 2, title: 'b' },
+    { id: 3, title: 'c' },
+    { id: 4, title: 'd' },
+  ];
+  before(async () => {
+    (globalThis as { location?: unknown }).location ??= { hash: '' };
+    S = await import('../ui/shared/state.ts');
+  });
+  const reset = () => {
+    const m = resolveMapping(inferMapping(raws), { chaff: 1, title: 'title', buckets: { field: 'b', values: ['now', 'later'], date: true } });
+    const d = buildDocument(raws, ['1', '2', '3', '4'], m);
+    S.doc.value = d;
+    S.decisions.value = {};
+    S.order.value = d.order;
+    S.hideTriaged.value = false;
+    S.selected.value = new Set();
+    S.cursor.value = '2';
+  };
+
+  it('to the next row after a digit or a day, and stays at the end', () => {
+    reset();
+    S.assign('now');
+    assert.equal(S.cursor.value, '3');
+    assert.ok(S.assignDay('2026-11-04'));
+    assert.equal(S.cursor.value, '4');
+    S.assign('later');
+    assert.equal(S.cursor.value, '4', 'nothing after the last row');
+  });
+
+  it('not after a clear, nor over a selection', () => {
+    reset();
+    S.assign(null);
+    assert.equal(S.cursor.value, '2');
+    S.selected.value = new Set(['1', '3']);
+    S.assign('now');
+    assert.equal(S.cursor.value, '2');
+    assert.equal(S.selected.value.size, 0);
+  });
+
+  it('to the row after the one that vanishes when triaged rows are hidden', () => {
+    reset();
+    S.hideTriaged.value = true;
+    S.assign('now');
+    assert.equal(S.cursor.value, '3', 'not the top of the list');
+    assert.deepEqual(S.rows.value.map((r) => r.key), ['1', '3', '4']);
   });
 });
