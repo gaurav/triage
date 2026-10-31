@@ -35,8 +35,11 @@ python3 -I docs/sunsama/filter-export.py data/sunsama/2026-10-31/sunsama-data-ex
 
 That writes `sunsama-exports-filtered-2026oct31.json` and `sunsama-urls.json` next to the export
 and prints only counts. Work from the filtered copy from then on; an agent should not open the
-raw export, nor look the tasks up through the MCP server to learn about them. The filtered copy
-keeps the export's layout (one task per line), so it diffs line by line against the raw one.
+raw export. The MCP records are needed for what the export lacks (`isArchived`, the integration
+URLs, elapsed time) and the recipe below reads them for that; what an agent should not do is read
+a task's notes through the server to get around the filter, and when it saves records to disk it
+should drop any Google link they carry. The filtered copy keeps the export's layout (one task per
+line), so it diffs line by line against the raw one.
 
 - Every Google URL goes: `google.com`, its country domains, the short links `goo.gl`,
   `forms.gle` and `g.co`, and their subdomains, with or without `https://`. Google Scholar stays,
