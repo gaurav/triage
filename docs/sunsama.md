@@ -20,6 +20,30 @@ regenerates it). Things that are not obvious from the field names:
 - Standing recurrences (the templates behind "every Monday") are not in the export. A filtered
   export may also lack the integration URLs; the MCP record has them under `integrationDetails`.
 
+### Filtering an export before reading it
+
+Keep each export in its own folder, `data/sunsama/<export day>/`, and before anyone (or any
+agent) reads it, take the Google document links out:
+
+```sh
+python3 -I docs/sunsama/filter-export.py data/sunsama/2026-10-31/sunsama-data-export-…-2026-10-31T06-27-15.json
+```
+
+That writes `sunsama-exports-filtered-2026oct31.json` and `sunsama-urls.json` next to the export
+and prints only counts. Work from the filtered copy from then on; an agent should not open the
+raw export, nor look the tasks up through the MCP server to learn about them. The filtered copy
+keeps the export's layout (one task per line), so it diffs line by line against the raw one.
+
+- Every `https://*.google.*/` URL goes, except Google Scholar, which is not a document. A link
+  in the notes goes whole when its text is the URL and keeps its text otherwise; a URL in a
+  title is cut out with the `()` around it, which can leave a title like "Look through ";
+  an empty `url` becomes null and a `website` attachment to a Google URL is dropped.
+- `sunsama-urls.json` is every URL left, with its `domain`, `count` (mentions; a link counts
+  once, though its URL is in `href`, `text=` and the link text) and `tasks` (tasks, with their
+  subtasks, that mention it), most mentioned first.
+- `--out` and `--urls` choose other paths. `test/sunsama.test.ts` runs the script on a synthetic
+  export.
+
 ## Archive and Backlog
 
 The Backlog is the "someday" list: no day, a time bucket (next two weeks … never), optional

@@ -46,7 +46,9 @@ to try different triage UIs on the same data and the same contract; the README h
 - Real Sunsama exports are personal and live in the gitignored `data/`. The committed fixture is
   synthetic: `node test/fixtures/make-sunsama-like.mjs` regenerates it. `docs/sunsama.md` has
   the export's quirks, the MCP tools and the archive-triage recipe; `docs/sunsama/` holds the
-  sidecar and the script that turns MCP records into chaff input.
+  sidecar, the script that turns MCP records into chaff input, and `filter-export.py`, which
+  strips Google document links from a new export. Run that before reading an export and work
+  from its filtered copy; don't open the raw export.
 
 ## Checking a UI change
 
